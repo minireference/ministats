@@ -10,7 +10,16 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+# TODO: revisit these version choices
+requirements = [
+    "matplotlib>=3.8.3",
+    "numpy>=1.26.4",
+    "scipy>=1.12.0",
+    "pandas>=2.2.1",
+    "pillow>=10.2.0",
+    "seaborn>=0.13.2",
+    "statsmodels>=0.14.1",
+]
 
 test_requirements = ['pytest>=3', ]
 

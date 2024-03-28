@@ -5,8 +5,6 @@
 import pytest
 
 
-from ministats import ministats
-
 
 @pytest.fixture
 def response():
