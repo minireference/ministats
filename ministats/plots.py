@@ -751,7 +751,7 @@ def plot_alpha_beta_errors(cohend, ax=None, xlims=None, n=9, alpha=0.05,
     ax.set_yticks([])
     if show_alt:
         ax.set_xticks([0,CV,muHA])
-        ax.set_xticklabels(["0", r"CV$_{\alpha}$", "$\Delta$"])
+        ax.set_xticklabels(["0", r"CV$_{\alpha}$", r"$\Delta$"])
     else:
         ax.set_xticks([0,CV])
         ax.set_xticklabels(["0", r"CV$_{\alpha}$"])
