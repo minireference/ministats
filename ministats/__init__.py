@@ -2,7 +2,7 @@
 
 __author__ = """Ivan Savov"""
 __email__ = 'ivan@minireference.com'
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 
 from .confidence_intervals import (
