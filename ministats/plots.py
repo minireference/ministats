@@ -15,6 +15,7 @@ from scipy.stats import t as tdist
 
 from .utils import ensure_containing_dir_exists
 from .utils import default_labeler
+from .sampling import gen_sampling_dist
 
 # Useful colors
 snspal = sns.color_palette()
@@ -552,17 +553,6 @@ def plot_samples(samples_df, ax=None, xlims=None, filename=None,
 
 
 
-def gen_sampling_dist(rv, statfunc, n, N=1000):
-    """
-    Simulate `N` samples of size `n` from the random variable `rv` to
-    generate the sampling distribution of the statistic `statfunc`.
-    """
-    stats = []
-    for i in range(0, N):
-        sample = rv.rvs(n)
-        stat = statfunc(sample)
-        stats.append(stat)
-    return stats
 
 
 def plot_sampling_dist(stats, label=None, xlims=None, ax=None,

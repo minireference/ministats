@@ -30,11 +30,13 @@ so you'll know what's going on under the hood.
 ## Roadmap
 
 - [x] import plot helpers from https://github.com/minireference/noBSstatsnotebooks/blob/main/notebooks/plot_helpers.py
-- [ ] import stats helpers from https://github.com/minireference/noBSstatsnotebooks/blob/main/notebooks/stats_helpers.py
-- [ ] add tests
+- [x] import stats helpers from https://github.com/minireference/noBSstatsnotebooks/blob/main/notebooks/stats_helpers.py
+- [x] add github actions CI
+- [x] add some tests
 - [ ] Split `plots.py` into:
    - [ ] `plots/discrete.py`
    - [ ] `plots/continuous.py`
    - [ ] `plots/linear_models.py`
    - [ ] `plots/figures.py` (not in main namespace)
    - [ ] `plots/sampling_dist` ? (not in main namespace)
+- [ ] add more tests
