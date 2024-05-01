@@ -67,6 +67,8 @@ from .plots import (
     plot_lm_partial,
     plot_lm_ttest,
     plot_lm_anova,
+    plot_lm_scale_loc,
+    calc_lm_vif,
 )
 
 from .sampling import (

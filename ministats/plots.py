@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.integrate import quad
 import seaborn as sns
 import statsmodels.formula.api as smf
+import statsmodels.api as sm
 
 from scipy.stats import randint    # special handling beta+1=beta
 from scipy.stats import nbinom     # display parameter n as r
@@ -839,7 +840,7 @@ def plot_lm_simple(xs, ys, ax=None, ci_mean=False, alpha_mean=0.1, lab_mean=True
             label_obs = None
         ax.fill_between(x_vals, lower_obs, upper_obs, alpha=0.1, color="C0", label=label_obs)
 
-    if lab_mean or lab_obs:
+    if (ci_mean and lab_mean) or (ci_obs and lab_obs):
         ax.legend()
 
 
@@ -1000,3 +1001,37 @@ def plot_lm_anova(data, x, y, ax=None):
     ax.legend()
     return ax
 
+
+def plot_lm_scale_loc(lmfit, pred=None):
+    """
+    Plot the scale-location plot for the linear model `lmfit`.
+    """
+    sigmahat = np.sqrt(lmfit.scale)
+    std_resids = lmfit.resid / sigmahat
+    sqrt_abs_std_resids = np.sqrt(np.abs(std_resids))
+    if pred:
+        xs = lmfit.model.data.orig_exog[pred]
+        xlabel = pred
+    else:
+        xs = lmfit.fittedvalues
+        xlabel = "fitted values"
+    ax = sns.regplot(x=xs, y=sqrt_abs_std_resids, lowess=True)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(r"$\sqrt{|\text{standardized residuals}|}$")
+    return ax
+
+
+def calc_lm_vif(lmfit, pred):
+    """
+    Calculate the variance inflation factor of the `pred` (str)
+    for the linear model fit `lmfit`.
+    """
+    dmatrix = lmfit.model.exog
+    pred_idx = lmfit.model.exog_names.index(pred)
+    n_cols = dmatrix.shape[1]
+    x_i = dmatrix[:, pred_idx]
+    mask = np.arange(n_cols) != pred_idx
+    X_noti = dmatrix[:, mask]
+    r_squared_i = sm.OLS(x_i, X_noti).fit().rsquared
+    vif = 1. / (1. - r_squared_i)
+    return vif
