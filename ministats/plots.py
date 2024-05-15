@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import numpy as np
 import pandas as pd
 from scipy.integrate import quad
@@ -13,6 +14,7 @@ from scipy.stats import expon      # hide loc=0 parameter
 from scipy.stats import gamma      # hide loc=0 parameter
 from scipy.stats import norm
 from scipy.stats import t as tdist
+
 
 from .utils import ensure_containing_dir_exists
 from .utils import default_labeler
@@ -925,7 +927,7 @@ def plot_lm_ttest(data, x, y, ax=None):
 
     # Plot the data
     ax = plt.gca() if ax is None else ax
-    sns.stripplot(data=data, x=x, y=y, hue=x, jitter=0, alpha=0.3)
+    sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2)
     sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D")
 
     # Customize plot labels
@@ -935,26 +937,29 @@ def plot_lm_ttest(data, x, y, ax=None):
     ax.set_xticks([0,1])
     ax.set_xticklabels([newxlabel0, newxlabel1])
     ax.set_xlim([-0.3, 1.3])
+    ax.set_xlabel(f"$\\texttt{{{x}}}_{{\\texttt{{{xlabel1}}}}}$")
+    ax.xaxis.set_label_coords(0.5, -0.15)
 
     # Get seaborn colors
     snspal = sns.color_palette()
 
     # Add h-lines to represent the two group means
-    ax.hlines(beta0, xmin=-0.3, xmax=1.3, color=snspal[0],
-              label=f"$\\beta_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean")
-    ax.hlines(beta0+beta1, xmin=0.8, xmax=1.2, color=snspal[1],
-              label=f"$\\beta_0 + \\beta_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean")
+    ax.hlines(beta0, xmin=-0.3, xmax=1.3, color=snspal[0])
+    ax.hlines(beta0+beta1, xmin=0.8, xmax=1.2, color=snspal[1])
 
     # Add diagonal to represent difference between means
-    ax.plot(
-        [0, 1],
-        [beta0, beta0 + beta1],
-        color="k",
-        label=f"$\\beta_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope",
-    )
+    ax.plot([0, 1], [beta0, beta0 + beta1], color="k")
+
+    # Draw custom legend
+    blue_diamond = mlines.Line2D([], [], color=snspal[0], marker='D', ls="",
+        label=f"$\\beta_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean")
+    yellow_diamond = mlines.Line2D([], [], color=snspal[1], marker='D', ls="",
+        label=f"$\\beta_0 + \\beta_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean")
+    slope_line = mlines.Line2D([], [], color="k",
+        label=f"$\\beta_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope")
+    ax.legend(handles=[blue_diamond, yellow_diamond, slope_line])
 
     # Return axes
-    ax.legend()
     return ax
 
 
@@ -978,19 +983,19 @@ def plot_lm_anova(data, x, y, ax=None):
 
     # Plot the data
     ax = plt.gca() if ax is None else ax
-    sns.stripplot(data=data, x=x, y=y, hue=x, jitter=0, alpha=0.3, order=labels, hue_order=labels)
+    sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2, order=labels, hue_order=labels)
     sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D", hue_order=labels)
     
     # Group 1 (baseline)
-    beta0 = lm.params[0]
+    beta0 = lm.params.iloc[0]
     interceptlab = lm.params.index[0]
     ax.axhline(beta0, color=snspal[0], linewidth=1,
-               label=f"$\\beta_0$ = \\texttt{{{interceptlab}}} = {labels[0]} mean")
+               label=f"$\\beta_0$ = \\texttt{{{interceptlab}}} = \\texttt{{{labels[0]}}} mean")
 
     # Remaining groups
     for i in range(1, len(labels)):
         label = labels[i]
-        beta = lm.params[i]
+        beta = lm.params.iloc[i]
         slopelab = lm.params.index[i]
         linestyle = linestyles[i%len(linestyles)]
         ax.hlines(beta0+beta, xmin=i-0.2, xmax=i+0.2, color=snspal[i])
