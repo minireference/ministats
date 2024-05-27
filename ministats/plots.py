@@ -896,7 +896,7 @@ def plot_lm_partial(lmfit, pred, others=None, ax=None):
     """
     Generate a partial regression plot from the best-fit line
     of the predictor `pred`, where the intercept is calculated
-    from the average of the `other` predictors time their params.
+    from the average of the `other` predictors.
     """
     ax = plt.gca() if ax is None else ax
     data = lmfit.model.data.orig_exog
@@ -912,6 +912,33 @@ def plot_lm_partial(lmfit, pred, others=None, ax=None):
     xs = np.linspace(data[pred].min(), data[pred].max())
     ys = intercept + slope*xs
     sns.lineplot(x=xs, y=ys, ax=ax)
+
+
+def plot_lm_partial_cat(lmfit, pred, others=None, color="C0", linestyle="solid", cats=None, ax=None):
+    """
+    Generate a partial regression plot from the best-fit line
+    of the predictor `pred`, where the intercept is calculated
+    from the average of the `other` predictors,
+    including the value of categorical predictors `cats` in the slope.
+    """
+    ax = plt.gca() if ax is None else ax
+    data = lmfit.model.data.orig_exog
+    params = lmfit.params
+    allpreds = set(data.columns) - {"Intercept"}
+    allnoncatpreds = set([pred for pred in allpreds if "T." not in pred])
+    assert pred in allnoncatpreds
+    others = allnoncatpreds - {pred} if others is None else others
+    intercept = params["Intercept"]
+    for other in others:
+        intercept += params[other]*data[other].mean() 
+    for cat in cats:
+        intercept += params[cat]
+    slope = params[pred]
+    print(pred, "intercept=", intercept, "slope=", slope)
+    xs = np.linspace(data[pred].min(), data[pred].max())
+    ys = intercept + slope*xs
+    sns.lineplot(x=xs, y=ys, color=color, ax=ax, linestyle=linestyle)
+
 
 
 def plot_lm_ttest(data, x, y, ax=None):
@@ -952,11 +979,11 @@ def plot_lm_ttest(data, x, y, ax=None):
 
     # Draw custom legend
     blue_diamond = mlines.Line2D([], [], color=snspal[0], marker='D', ls="",
-        label=f"$\\beta_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean")
+        label=f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean")
     yellow_diamond = mlines.Line2D([], [], color=snspal[1], marker='D', ls="",
-        label=f"$\\beta_0 + \\beta_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean")
+        label=f"$\\widehat{{\\beta}}_0 + \\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean")
     slope_line = mlines.Line2D([], [], color="k",
-        label=f"$\\beta_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope")
+        label=f"$\\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope")
     ax.legend(handles=[blue_diamond, yellow_diamond, slope_line])
 
     # Return axes
@@ -990,7 +1017,7 @@ def plot_lm_anova(data, x, y, ax=None):
     beta0 = lm.params.iloc[0]
     interceptlab = lm.params.index[0]
     ax.axhline(beta0, color=snspal[0], linewidth=1,
-               label=f"$\\beta_0$ = \\texttt{{{interceptlab}}} = \\texttt{{{labels[0]}}} mean")
+               label=f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = \\texttt{{{labels[0]}}} mean")
 
     # Remaining groups
     for i in range(1, len(labels)):
@@ -1000,7 +1027,7 @@ def plot_lm_anova(data, x, y, ax=None):
         linestyle = linestyles[i%len(linestyles)]
         ax.hlines(beta0+beta, xmin=i-0.2, xmax=i+0.2, color=snspal[i])
         ax.plot([i-0.7, i], [beta0, beta0 + beta], color="k", linestyle=linestyle,
-                label=f"$\\beta_{{\\texttt{{{label}}}}}$ = \\texttt{{{slopelab}}} slope")
+                label=f"$\\widehat{{\\beta}}_{{\\texttt{{{label}}}}}$ = \\texttt{{{slopelab}}} slope")
 
     # Return axes
     ax.legend()
