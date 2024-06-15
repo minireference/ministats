@@ -863,6 +863,7 @@ def plot_residuals2(xdata, ydata, b0, b1, xlims=None, ax=None):
     as a square.
     """
     from matplotlib.patches import Rectangle
+    ASPECT_CORRECTION = 0.89850746268
 
     if ax is None:
         _, ax = plt.subplots()
@@ -881,7 +882,7 @@ def plot_residuals2(xdata, ydata, b0, b1, xlims=None, ax=None):
         ax.plot([x, x], [y, b0+b1*x], color=red, zorder=0, linewidth=0.5)
         # plot the residual squared
         deltay = y - (b0+b1*x)
-        deltax = get_aspect(ax)*deltay
+        deltax = get_aspect(ax)*deltay*ASPECT_CORRECTION
         rect1 = Rectangle([x, b0+b1*x], width=-deltax, height=deltay,
                           linewidth=0, facecolor=red, zorder=2, alpha=0.3)
         rect2 = Rectangle([x, b0+b1*x], width=-deltax, height=deltay,
