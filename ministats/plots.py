@@ -1,3 +1,4 @@
+import copy
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import numpy as np
@@ -893,7 +894,7 @@ def plot_residuals2(xdata, ydata, b0, b1, xlims=None, ax=None):
     return ax
 
 
-def plot_lm_partial(lmfit, pred, others=None, ax=None):
+def plot_lm_partial_old(lmfit, pred, others=None, ax=None):
     """
     Generate a partial regression plot from the best-fit line
     of the predictor `pred`, where the intercept is calculated
@@ -913,6 +914,54 @@ def plot_lm_partial(lmfit, pred, others=None, ax=None):
     xs = np.linspace(data[pred].min(), data[pred].max())
     ys = intercept + slope*xs
     sns.lineplot(x=xs, y=ys, ax=ax)
+
+
+def plot_lm_partial(lmfit, pred, others=None, ax=None):
+    """
+    Generate a partial regression plot from the model `lmfit`
+    for the predictor `pred`, given the `other` predictors.
+    We plot the residuals of `outcome ~ other` along the y-axis,
+    and the residuals of the model `pred ~ other` on the x-axis.
+    """
+    ax = plt.gca() if ax is None else ax
+    lmfit = copy.copy(lmfit)  # plot function was breaking after re-excution
+    xdata = lmfit.model.data.orig_exog
+    ydata = lmfit.model.data.orig_endog
+    data = pd.concat([xdata, ydata], axis=1)
+
+    # Find others= as list of strings
+    allpreds = set(xdata.columns) - {"Intercept"}
+    assert pred in allpreds
+    others = allpreds - {pred} if others is None else others
+    others_formula = "1"
+    if others:
+        others_formula += "+" + "+".join(others)
+
+    # x-axis = residuals of `pred ~ 1 + others`
+    lmpred = smf.ols(f"{pred} ~ {others_formula}", data=data).fit()
+    xresids = lmpred.resid
+
+    # y-axis = residuals of `outcome ~ 1 + others`
+    outname = lmfit.model.endog_names
+    lmoutcome = smf.ols(f"{outname} ~ {others_formula}", data=data).fit()
+    yresids = lmoutcome.resid
+
+    # scatter plot
+    sns.scatterplot(x=xresids, y=yresids, ax=ax)
+
+    # best-fit line between the residuals
+    dfresids = pd.DataFrame({"xresids": xresids, "yresids": yresids})
+    lmresids = smf.ols("yresids ~ 0 + xresids", data=dfresids).fit()
+    slope = lmresids.params.iloc[0]
+    xs = np.linspace(xresids.min(), xresids.max(), 100)
+    ys = slope*xs
+    sns.lineplot(x=xs, y=ys, ax=ax)
+
+    ax.set_xlabel(f"{pred} ~ {others_formula} residuals")
+    ax.set_ylabel(f"{outname} ~ {others_formula} residuals")
+    ax.set_title('Partial regression plot')
+
+    return ax
 
 
 def plot_lm_partial_cat(lmfit, pred, others=None, color="C0", linestyle="solid", cats=None, ax=None):
