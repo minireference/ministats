@@ -1,10 +1,10 @@
-# Mini Stats Helpers
+# Ministats
 
 [![image](https://img.shields.io/pypi/v/ministats.svg)](https://pypi.python.org/pypi/ministats)
 [![Documentation Status](https://readthedocs.org/projects/ministats/badge/?version=latest)](https://ministats.readthedocs.io/en/latest/?version=latest)
 
-Common statistical testing procedures used for STATS 101 topics.
-The code is intentionally simple, to make it easy to read for beginners.
+Common statistical testing procedures and plotting functions used for STATS 101.
+The code is intentionally simple to make it easy to read for beginners.
 
 -   Free software: MIT license
 -   Documentation: https://ministats.readthedocs.io
@@ -21,9 +21,9 @@ so you'll know what's going on under the hood.
 
 ## Features
 
-- Simple, concise code
-- Uses standard prob. libraries `scipy.stats`
-- Tested against other statistical software
+- Simple, concise code.
+- Uses standard prob. libraries `scipy.stats`.
+- Tested against other statistical software.
 
 
 

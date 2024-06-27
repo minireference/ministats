@@ -1,5 +1,5 @@
-Welcome to Mini Statistics's documentation!
-======================================
+Welcome to the ministats docs
+=============================
 
 .. toctree::
    :maxdepth: 2
@@ -8,9 +8,10 @@ Welcome to Mini Statistics's documentation!
    readme
    installation
    usage
-   modules
-   contributing
+   design
    history
+   contributing
+
 
 Indices and tables
 ==================
