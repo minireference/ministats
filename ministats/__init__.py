@@ -45,22 +45,17 @@ from .hypothesis_tests import (
 )
 
 from .plots import (
+    nicebins
+)
+
+from .plots.probability import (
     plot_pmf,
     plot_cdf,
-    generate_pmf_panel,
     plot_pdf,
-    calc_prob_and_plot,
-    calc_prob_and_plot_tails,
-    plot_pdf_and_cdf,
-    generate_pdf_panel,
-    nicebins,
     qq_plot,
-    gen_samples,
-    plot_samples,
-    plot_sampling_dist,
-    plot_samples_panel,
-    plot_sampling_dists_panel,
-    plot_alpha_beta_errors,
+)
+
+from .plots.regression import (
     plot_lm_simple,
     plot_residuals,
     plot_residuals2,
@@ -79,5 +74,23 @@ from .sampling import (
 
 # Functions that are intentionally left out of the public interface
 #  - from probs import MixtureModel, mixnorms
-#  - simulations.simulate_ci_props
+#  - `simulations.simulate_ci_props`
 #  - utils.savefigure doesn't need to be part of the public interface
+#  - all plotting functions used to generate specific figures `plots.figures`
+
+# TODO: Remove these from namespace in first major release.
+#       Notebooks in `figures_generation/` folder must use full path imports
+#       e.g. `from ministats.plots.figures import generate_pmf_panel`
+from .plots.figures import (
+    generate_pmf_panel,
+    calc_prob_and_plot,
+    calc_prob_and_plot_tails,
+    plot_pdf_and_cdf,
+    generate_pdf_panel,
+    gen_samples,
+    plot_samples,
+    plot_sampling_dist,
+    plot_samples_panel,
+    plot_sampling_dists_panel,
+    plot_alpha_beta_errors,
+)
