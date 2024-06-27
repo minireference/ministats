@@ -17,9 +17,9 @@ from scipy.stats import norm
 from scipy.stats import t as tdist
 
 
-from .utils import ensure_containing_dir_exists
-from .utils import default_labeler
-from .sampling import gen_sampling_dist
+from ..utils import ensure_containing_dir_exists
+from ..utils import default_labeler
+from ..sampling import gen_sampling_dist
 
 # Useful colors
 snspal = sns.color_palette()
