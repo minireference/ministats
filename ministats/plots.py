@@ -948,18 +948,20 @@ def plot_lm_partial(lmfit, pred, others=None, ax=None):
 
     # scatter plot
     sns.scatterplot(x=xresids, y=yresids, ax=ax)
+    ylims = ax.get_ylim()
 
     # best-fit line between the residuals
     dfresids = pd.DataFrame({"xresids": xresids, "yresids": yresids})
     lmresids = smf.ols("yresids ~ 0 + xresids", data=dfresids).fit()
     slope = lmresids.params.iloc[0]
-    xs = np.linspace(xresids.min(), xresids.max(), 100)
+    xs = np.linspace(*ylims, 100)
     ys = slope*xs
     sns.lineplot(x=xs, y=ys, ax=ax)
 
-    ax.set_xlabel(f"{pred} ~ {others_formula} residuals")
-    ax.set_ylabel(f"{outname} ~ {others_formula} residuals")
+    ax.set_xlabel(f"{pred} ~ {others_formula}  residuals")
+    ax.set_ylabel(f"{outname} ~ {others_formula}  residuals")
     ax.set_title('Partial regression plot')
+    ax.set_ylim(ylims)
 
     return ax
 
