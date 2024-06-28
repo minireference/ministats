@@ -44,39 +44,13 @@ from .hypothesis_tests import (
     ttest_paired,
 )
 
-from .plots import (
-    nicebins
-)
-
-from .plots.probability import (
-    plot_pmf,
-    plot_cdf,
-    plot_pdf,
-    qq_plot,
-)
-
-from .plots.regression import (
-    plot_lm_simple,
-    plot_residuals,
-    plot_residuals2,
-    plot_lm_partial,
-    plot_lm_ttest,
-    plot_lm_anova,
-    plot_lm_scale_loc,
+from .linear_models import (
     calc_lm_vif,
 )
 
-from .sampling import (
-    gen_sampling_dist,
-    gen_boot_dist
+from .plots import (
+    nicebins
 )
-
-
-# Functions that are intentionally left out of the public interface
-#  - from probs import MixtureModel, mixnorms
-#  - `simulations.simulate_ci_props`
-#  - utils.savefigure doesn't need to be part of the public interface
-#  - all plotting functions used to generate specific figures `plots.figures`
 
 # TODO: Remove these from namespace in first major release.
 #       Notebooks in `figures_generation/` folder must use full path imports
@@ -93,4 +67,46 @@ from .plots.figures import (
     plot_samples_panel,
     plot_sampling_dists_panel,
     plot_alpha_beta_errors,
+    #
+    # Linear models
+    # plot_residuals,
+    # plot_residuals2,
+    # plot_lm_ttest,
+    # plot_lm_anova,
 )
+
+
+from .plots.probability import (
+    plot_pmf,
+    plot_cdf,
+    plot_pdf,
+    qq_plot,
+)
+
+from .plots.regression import (
+    # NEW
+    plot_reg,
+    plot_resid,
+    plot_partreg,
+    plot_scaleloc,
+    plot_pred_bands,
+    # OPTIONAL
+    plot_projreg,
+    # OLD
+    # plot_lm_simple,
+    # plot_lm_partial,
+    # plot_lm_partial_old,
+    # plot_projreg_cat,
+)
+
+from .sampling import (
+    gen_sampling_dist,
+    gen_boot_dist
+)
+
+
+# Functions that are intentionally left out of the public interface
+#  - from probs import MixtureModel, mixnorms
+#  - `simulations.simulate_ci_props`
+#  - utils.savefigure doesn't need to be part of the public interface
+#  - all plotting functions used to generate specific figures `plots.figures`

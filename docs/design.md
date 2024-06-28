@@ -27,10 +27,11 @@ Here are the requirements:
 - Section 4.4: Regression with categorical predictors
   - partial regression with groupby categorical variable
 - Section 4.5: Causal effects and confounders
-  - partial 
+  - simple linear regression plot
+  - partial regression plot
 - Section 4.6: Generalized linear models
-  - logistic regression viz
-  - Poisson regression viz
+  - logistic regression vis
+  - Poisson regression vis
 
 
 To get these, we'll define the following core functions:
@@ -38,18 +39,22 @@ To get these, we'll define the following core functions:
 - `plot_resid(lmres, pred=None, lowess=False)`: scatter plot of residuals
   versus the predictor `pred`. If `pred` is None, we plot the residuals
   versus the fitted values of the outcome variable. The plot contains shows
-  a dashed horizontal line at `y=0` and an optional LOWERSS curve.
+  a dashed horizontal line at `y=0` and an optional LOWESS curve.
 - `plot_partreg(lmres, pred)`: partial regression plot that 
   uses regression to "subtract" all other variables from both
-  the outcome variable (plot residuals of Y ~ others on y-axis)
-  and the predictor `pred` (plot residuals pred ~ others on the x-axis).
+  the outcome variable (plot residuals of `outcome ~ 1+others` on y-axis)
+  and the predictor `pred` (plot residuals `pred ~ 1+others` on the x-axis).
 
 Optional methods (for completeness):
-- `plot_partreg_proj(lmres, pred)`: use the replace-predictor-by-their-mean to plot
+- `plot_projreg(lmres, pred, others="mean")`: use the replace-predictor-by-their-mean to plot
 - `plot_scaleloc(lmres, lowess=True)`: scale-location plot
 
 Convenience methods (for generating panels with one command):
 - `plot_partregs(lmres)`: calls `plot_partreg` for each predictor
 - `plot_resids(lmres)`: calls `plot_resid` to plot residuals vs. each predictor and vs. fitted values
-- 
 
+Figures-only plots:
+- `plot_residuals`: plot residuals between the points (x,y) and the line y = b0 + b1*x.
+- `plot_residuals2`:
+- `plot_lm_ttest`:
+- `plot_lm_anova`:

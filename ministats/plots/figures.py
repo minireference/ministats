@@ -1,3 +1,4 @@
+import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ from scipy.stats import expon      # hide loc=0 parameter
 from scipy.stats import gamma      # hide loc=0 parameter
 from scipy.stats import norm
 import seaborn as sns
-
+import statsmodels.formula.api as smf
 
 
 # Useful colors
@@ -41,7 +42,7 @@ def generate_pmf_panel(fname, xs, model, params_matrix,
 
     # RV generation
     xmax = np.max(xs) + 1
-    fX_matrix = np.zeros( (M,N,xmax) )
+    fX_matrix = np.zeros((M,N,xmax))
     for i in range(0,M):
         for j in range(0,N):
             params = params_matrix[i][j]
@@ -86,7 +87,7 @@ def generate_pmf_panel(fname, xs, model, params_matrix,
                 display_params = params
             label = labeler(display_params, params_to_latex)
             markerline, _stemlines, _baseline = ax.stem(fX, basefmt=" ")
-            plt.setp(markerline, markersize = 2)
+            plt.setp(markerline, markersize=2)
             if xticks is not None:
                 ax.xaxis.set_ticks(xticks)
             ax.text(0.95, 0.86, label,
@@ -244,7 +245,7 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
     """
     # We're drawing a figure with MxN subplots
     M = len(params_matrix)
-    N = max( [len(row) for row in params_matrix] )
+    N = max([len(row) for row in params_matrix])
 
     # RV generation
     fXs_matrix = np.zeros( (M,N,len(xs)) )
@@ -504,10 +505,10 @@ def plot_alpha_beta_errors(cohend, ax=None, xlims=None, n=9, alpha=0.05,
     CV = norm.ppf(1-alpha) * se
 
     # plot sampling distributions
-    calc_prob_and_plot_tails(rvXbarH0, x_l=xmin, x_r=CV, xlims=[xmin,xmax],
+    calc_prob_and_plot_tails(rvXbarH0, x_l=xmin, x_r=CV, xlims=[xmin, xmax],
                                 ax=ax, color="black", alpha=transp, facecolor=alpha_color)
     if show_alt:
-        calc_prob_and_plot_tails(rvXbarHA, x_l=CV, x_r=xmax, xlims=[xmin,xmax],
+        calc_prob_and_plot_tails(rvXbarHA, x_l=CV, x_r=xmax, xlims=[xmin, xmax],
                                     ax=ax, color="black", alpha=transp, facecolor=beta_color)
         ax.lines[1].set_linestyle("--")
     ax.set_title(None)
@@ -561,7 +562,7 @@ def plot_alpha_beta_errors(cohend, ax=None, xlims=None, n=9, alpha=0.05,
     # manually set y-limits of plot to avoid gap
     rvXbarH0MAX = rvXbarH0.pdf(0)
     ymax = rvXbarH0MAX*1.15
-    ax.set_ylim([0,ymax])
+    ax.set_ylim([0, ymax])
 
     # cutoff line
     ax.vlines([CV], ymin=0, ymax=ax.get_ylim()[1], linestyle="-", color="red")
@@ -586,3 +587,152 @@ def plot_alpha_beta_errors(cohend, ax=None, xlims=None, n=9, alpha=0.05,
 
     return ax
 
+
+
+
+# Linear models
+################################################################################
+
+def plot_residuals(xdata, ydata, b0, b1, xlims=None, ax=None):
+    """
+    Plot residuals between the points (x,y) and the line y = b0 + b1*x.
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    for x, y in zip(xdata, ydata):
+        ax.plot([x, x], [y, b0+b1*x], color=red, zorder=0)
+    return ax
+
+
+def plot_residuals2(xdata, ydata, b0, b1, xlims=None, ax=None):
+    """
+    Plot residuals between the points (x,y) and the line y = b0 + b1*x
+    as a square.
+    """
+    from matplotlib.patches import Rectangle
+    ASPECT_CORRECTION = 0.89850746268
+
+    if ax is None:
+        _, ax = plt.subplots()
+
+    def get_aspect(ax):
+        fig = ax.figure
+        ll, ur = ax.get_position() * fig.get_size_inches()
+        width, height = ur - ll
+        axes_ratio = height / width
+        aspect = axes_ratio / ax.get_data_ratio()
+        return aspect
+
+    for x, y in zip(xdata, ydata):
+        # plot the residual as a vertical line
+        ax.set_axisbelow(True)
+        ax.plot([x, x], [y, b0+b1*x], color=red, zorder=0, linewidth=0.5)
+        # plot the residual squared
+        deltay = y - (b0+b1*x)
+        deltax = get_aspect(ax)*deltay*ASPECT_CORRECTION
+        rect1 = Rectangle([x, b0+b1*x], width=-deltax, height=deltay,
+                          linewidth=0, facecolor=red, zorder=2, alpha=0.3)
+        rect2 = Rectangle([x, b0+b1*x], width=-deltax, height=deltay,
+                          linewidth=0.5, facecolor="none", edgecolor=red, zorder=2)
+        ax.add_patch(rect1)
+        ax.add_patch(rect2)
+
+    return ax
+
+
+
+
+# Hypothesis tests as linear models
+################################################################################
+
+def plot_lm_ttest(data, x, y, ax=None):
+    """
+    Plot a combined scatterplot, means, and LM slope line
+    to illustrate the equivalence between two-sample t-test
+    and a linear model with a single binary predictor `x`.
+    """
+    # Fit the linear model
+    lm = smf.ols(formula=f"{y} ~ 1 + C({x})", data=data).fit()
+    beta0, beta1 = lm.params
+    interceptlab, slopelab = lm.params.index
+
+    # Plot the data
+    with plt.rc_context({"text.usetex":True}):
+        ax = plt.gca() if ax is None else ax
+        sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2)
+        sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D")
+
+        # Customize plot labels
+        xlabel0, xlabel1 = [lab.get_text() for lab in ax.get_xticklabels()]
+        newxlabel0 = xlabel0 + "\n0"
+        newxlabel1 = xlabel1 + "\n1"
+        ax.set_xticks([0,1])
+        ax.set_xticklabels([newxlabel0, newxlabel1])
+        ax.set_xlim([-0.3, 1.3])
+        ax.set_xlabel(f"$\\texttt{{{x}}}_{{\\texttt{{{xlabel1}}}}}$")
+        ax.xaxis.set_label_coords(0.5, -0.15)
+
+        # Get seaborn colors
+        snspal = sns.color_palette()
+
+        # Add h-lines to represent the two group means
+        ax.hlines(beta0, xmin=-0.3, xmax=1.3, color=snspal[0])
+        ax.hlines(beta0+beta1, xmin=0.8, xmax=1.2, color=snspal[1])
+
+        # Add diagonal to represent difference between means
+        ax.plot([0, 1], [beta0, beta0 + beta1], color="k")
+
+        # Draw custom legend
+        blue_diamond = mlines.Line2D([], [], color=snspal[0], marker='D', ls="",
+            label=f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean")
+        yellow_diamond = mlines.Line2D([], [], color=snspal[1], marker='D', ls="",
+            label=f"$\\widehat{{\\beta}}_0 + \\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean")
+        slope_line = mlines.Line2D([], [], color="k",
+            label=f"$\\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope")
+        ax.legend(handles=[blue_diamond, yellow_diamond, slope_line])
+        return ax
+
+
+def plot_lm_anova(data, x, y, ax=None):
+    """
+    Plot a combined scatterplot, means, and LM slope lines
+    to illustrate the equivalence between ANOVA test and
+    a linear model with a single categorical predictor `x`.
+    """
+    # Fit the linear model
+    lm = smf.ols(formula=f"{y} ~ 1 + C({x})", data=data).fit()
+
+    # Labels for the different levels of the categorical variable
+    labels = sorted(np.unique(data[x].values))
+
+    # Seaborn color palette, line styles, and aesthetics
+    snspal = sns.color_palette()
+    linestyles = ['solid', 'dotted', 'dashed', 'dashdot',
+                  (0, (3, 5, 1, 5, 1, 5)),  # dashdotdotted
+                  (5, (10, 3))]             # long dash with offset
+
+    # Plot the data
+    with plt.rc_context({"text.usetex":True}):
+        ax = plt.gca() if ax is None else ax
+        sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2, order=labels, hue_order=labels)
+        sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D", hue_order=labels)
+
+        # Group 1 (baseline)
+        beta0 = lm.params.iloc[0]
+        interceptlab = lm.params.index[0]
+        ax.axhline(beta0, color=snspal[0], linewidth=1,
+                label=f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = \\texttt{{{labels[0]}}} mean")
+
+        # Remaining groups
+        for i in range(1, len(labels)):
+            label = labels[i]
+            beta = lm.params.iloc[i]
+            slopelab = lm.params.index[i]
+            linestyle = linestyles[i%len(linestyles)]
+            ax.hlines(beta0+beta, xmin=i-0.2, xmax=i+0.2, color=snspal[i])
+            ax.plot([i-0.7, i], [beta0, beta0 + beta], color="k", linestyle=linestyle,
+                    label=f"$\\widehat{{\\beta}}_{{\\texttt{{{label}}}}}$ = \\texttt{{{slopelab}}} slope")
+
+        # Return axes
+        ax.legend()
+        return ax
