@@ -54,12 +54,11 @@ def plot_resid(lmres, pred=None, lowess=False, ax=None):
         xs = lmres.model.data.orig_exog[pred]
         xname = pred
     ys = lmres.resid
-    sns.scatterplot(x=xs, y=ys, color="red", ax=ax)
+    sns.scatterplot(x=xs, y=ys, color="C0", ax=ax, s=8)
     ax.axhline(y=0, color="b", linestyle="dotted")
-    # ax.axhline(0, ls=":", c=".2")
     if lowess:
-        xgrid, ylowess = smoothers_lowess.lowess(xs, ys).T
-        sns.lineplot(x=xgrid, y=ylowess)
+        xgrid, ylowess = smoothers_lowess.lowess(ys, xs, frac=0.72).T
+        sns.lineplot(x=xgrid, y=ylowess, color="C0", ax=ax)
     ax.set_xlabel(xname)
     ax.set_ylabel("residuals $r_i$")
     return ax
