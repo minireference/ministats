@@ -1,9 +1,7 @@
 import numpy as np
-from scipy.stats import bootstrap
 from scipy.stats import chi2
 from scipy.stats import f_oneway
 from scipy.stats import norm
-from scipy.stats import rv_continuous
 from scipy.stats import t as tdist
 
 from .estimators import mean

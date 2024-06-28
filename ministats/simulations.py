@@ -91,8 +91,8 @@ def simulate_ci_props(pops, methods=["a", "percentile", "bca"], ns=[20,40],
                     widths.loc[j,(method,n)] = ci[1] - ci[0]
         for method in methods:
             for n in ns:
-                results.loc[(pop,n), ("cov",method)] = counts[(method,n)] / N
-                results.loc[(pop,n), ("wbar",method)] = widths.mean()[method,n]
+                results.loc[(pop, n), ("cov", method)] = counts[(method, n)] / N
+                results.loc[(pop, n), ("wbar", method)] = widths.mean()[method, n]
 
     results.to_csv(filepath)
     print("Saved file to " + filepath)
