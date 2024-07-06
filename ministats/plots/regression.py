@@ -9,42 +9,34 @@ from statsmodels.nonparametric import smoothers_lowess
 import warnings
 
 
-# Useful colors
-snspal = sns.color_palette()
-blue, orange, red, purple = snspal[0], snspal[1], snspal[3], snspal[4]
-
-
-
 # Simple linear regression
 ################################################################################
 
 def plot_reg(lmres, ax=None):
     """
-    Plot the best-fitting line of a simple linear regression model
-    on top of a scatter plot of the dataset.
+    Plot the best-fitting line of the simple linear regression
+    model `lmres` on top of a scatter plot of the original data.
     """
     ax = plt.gca() if ax is None else ax
-    # 1. Extract data
-    xname = lmres.model.exog_names[1]
-    xs = lmres.model.exog[:,1]
-    yname = lmres.model.endog_names
-    ys = lmres.model.endog
-    # 2. Get model predicitons
-    xgrid = np.linspace(np.min(xs), np.max(xs), 100)
-    ypred = lmres.get_prediction({xname: xgrid})
-    # 3. Draw the scatterplot and plot the best-fit line
+    # Draw scatter plot of the data
+    xs = lmres.model.data.orig_exog.iloc[:,1]
+    ys = lmres.model.data.orig_endog.iloc[:,0]
     sns.scatterplot(x=xs, y=ys, ax=ax)
+    # Plot the model's predictions
+    xgrid = np.linspace(np.min(xs), np.max(xs), 100)
+    ypred = lmres.get_prediction({xs.name: xgrid})
     sns.lineplot(x=xgrid, y=ypred.predicted, ax=ax)
-    ax.set_xlabel(f"{xname}")
-    ax.set_ylabel(f"{yname}")
     return ax
+
+def fit_and_plot(xs, ys, ax=None):
+    pass
 
 
 def plot_resid(lmres, pred=None, lowess=False, ax=None):
     """
-    Residuals plot for the model `lmres` against the predictor `pred`.
-    If `pred` is None, we plot the residuals versus the outcome fitted values.
-    The plot shows a dashed horizontal line at `y=0` and an optional LOWESS curve.
+    Residuals plot for the model `lmres` vs. the predictor `pred`.
+    If `pred` is None, plot the residuals vs. the fitted values.
+    The function can an optional LOWESS curve for the residuals.
     """
     ax = plt.gca() if ax is None else ax
     if pred is None:
@@ -54,11 +46,11 @@ def plot_resid(lmres, pred=None, lowess=False, ax=None):
         xs = lmres.model.data.orig_exog[pred]
         xname = pred
     ys = lmres.resid
-    sns.scatterplot(x=xs, y=ys, color="C0", ax=ax, s=8)
-    ax.axhline(y=0, color="b", linestyle="dotted")
+    sns.scatterplot(x=xs, y=ys, ax=ax)
+    ax.axhline(y=0, color="k", linestyle="dotted", alpha=0.6)
     if lowess:
         xgrid, ylowess = smoothers_lowess.lowess(ys, xs, frac=0.72).T
-        sns.lineplot(x=xgrid, y=ylowess, color="C0", ax=ax)
+        sns.lineplot(x=xgrid, y=ylowess, ax=ax)
     ax.set_xlabel(xname)
     ax.set_ylabel("residuals $r_i$")
     return ax
@@ -73,13 +65,12 @@ def plot_pred_bands(lmres, ax=None,
     If `ci_obs` is True: draw a (1-ci_obs)-CI for the predicted values.
     """
     ax = plt.gca() if ax is None else ax
-    xs = lmres.model.exog[:,1]
-    xname = lmres.model.exog_names[1]
+    xs = lmres.model.data.orig_exog.iloc[:,1]
     n = lmres.nobs
 
     # Get model predicitons
     xgrid = np.linspace(np.min(xs), np.max(xs), 100)
-    ypred = lmres.get_prediction({xname: xgrid})
+    ypred = lmres.get_prediction({xs.name: xgrid})
 
     if ci_mean:
         # Draw the confidence interval for the mean predictions
@@ -87,14 +78,11 @@ def plot_pred_bands(lmres, ax=None,
         lower_mean = ypred.predicted + t_05*ypred.se_mean
         upper_mean = ypred.predicted + t_95*ypred.se_mean
         if lab_mean:
-            if isinstance(lab_mean, str):
-                label_mean = lab_mean
-            else:
-                perc_mean = round(100*(1-alpha_mean))
-                label_mean = f"{perc_mean}% confidence interval for the mean"
+            perc_mean = round(100*(1-alpha_mean))
+            label_mean = f"{perc_mean}% confidence interval for the mean"
         else:
             label_mean = None
-        ax.fill_between(xgrid, lower_mean, upper_mean, alpha=0.4, color="C0", label=label_mean)
+        ax.fill_between(xgrid, lower_mean, upper_mean, color="C0", alpha=0.4, label=label_mean)
 
     if ci_obs:
         # Draw the confidence interval for the predicted observations
@@ -102,18 +90,15 @@ def plot_pred_bands(lmres, ax=None,
         lower_obs = ypred.predicted + t_05*ypred.se_obs
         upper_obs = ypred.predicted + t_95*ypred.se_obs
         if lab_obs:
-            if isinstance(lab_obs, str):
-                label_obs = lab_obs
-            else:
-                perc_obs = round(100*(1-alpha_obs))
-                label_obs = f"{perc_obs}% confidence interval for observations"
+            perc_obs = round(100*(1-alpha_obs))
+            label_obs = f"{perc_obs}% confidence interval for observations"
         else:
             label_obs = None
-        ax.fill_between(xgrid, lower_obs, upper_obs, alpha=0.1, color="C0", label=label_obs)
+        ax.fill_between(xgrid, lower_obs, upper_obs, color="C0", alpha=0.1, label=label_obs)
 
     if (ci_mean and lab_mean) or (ci_obs and lab_obs):
         ax.legend()
-
+    return ax
 
 
 # Multiple linear regression
@@ -121,10 +106,10 @@ def plot_pred_bands(lmres, ax=None,
 
 def plot_partreg(lmres, pred, ax=None):
     """
-    Generate a partial regression plot from the model results `lmres`
-    for the predictor `pred` given the other predictors.
-    We plot the residuals of `outcome ~ other` along the y-axis,
-    and the residuals of the model `pred ~ other` on the x-axis.
+    Generate a partial regression plot from the linear model `lmres`
+    against the predictor `pred`, given the other predictors.
+    We plot the residuals of the model `outcome ~ other` along the y-axis,
+    versus the residuals of the model `pred ~ other` along the x-axis.
     """
     ax = plt.gca() if ax is None else ax
     xdata = lmres.model.data.orig_exog
@@ -143,26 +128,24 @@ def plot_partreg(lmres, pred, ax=None):
     if others:
         others_formula += "+" + "+".join(others)
 
-    # Fit model for x-axis = residuals of `pred ~ 1 + others`
+    # x-axis = residuals of the model `pred ~ 1 + others`
     lmpred = smf.ols(f"{pred} ~ {others_formula}", data=data).fit()
     xresids = lmpred.resid
 
-    # Fit model for y-axis = residuals of `outcome ~ 1 + others`
+    # y-axis = residuals of the model `outcome ~ 1 + others`
     outname = lmres.model.endog_names
     lmoutcome = smf.ols(f"{outname} ~ {others_formula}", data=data).fit()
     yresids = lmoutcome.resid
 
-    # Draw scatter plot
+    # Draw a scatter plot of the y-residuals vs. the x-residuals
     sns.scatterplot(x=xresids, y=yresids, ax=ax)
-    xlims = ax.get_xlim()
-    ylims = ax.get_ylim()
 
-    # Plot best-fitting line
+    # Plot the best-fitting line
     dfresids = pd.DataFrame({"xresids": xresids, "yresids": yresids})
     lmresids = smf.ols("yresids ~ 0 + xresids", data=dfresids).fit()
     slope = lmresids.params.iloc[0]
-    xgrid = np.linspace(*ylims, 100)
-    ys = slope*xgrid
+    xgrid = np.linspace(xresids.min(), xresids.max(), 100)
+    ys = slope * xgrid
     sns.lineplot(x=xgrid, y=ys, ax=ax)
 
     # Add descriptive labels
@@ -170,8 +153,6 @@ def plot_partreg(lmres, pred, ax=None):
         others_formula = "other"
     ax.set_xlabel(f"{pred} ~ {others_formula}  residuals")
     ax.set_ylabel(f"{outname} ~ {others_formula}  residuals")
-    ax.set_xlim(xlims)
-    ax.set_ylim(ylims)
     return ax
 
 
@@ -220,7 +201,7 @@ def plot_partreg_cat(lmres, pred, ax=None):
     others_formula = "1"
     others_display = "1"
     if others:
-        others_quoted = ["Q('"+ other + "')" for other in others]
+        others_quoted = ["Q('" + other + "')" for other in others]
         others_formula += "+" + "+".join(others_quoted)
         for other in others:
             m = re.match("C\((?P<varname>.*)\).*", other)
