@@ -28,9 +28,6 @@ def plot_reg(lmres, ax=None):
     sns.lineplot(x=xgrid, y=ypred.predicted, ax=ax)
     return ax
 
-def fit_and_plot(xs, ys, ax=None):
-    pass
-
 
 def plot_resid(lmres, pred=None, lowess=False, ax=None):
     """
