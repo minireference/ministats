@@ -84,7 +84,6 @@ from .plots.probability import (
 )
 
 from .plots.regression import (
-    # NEW
     plot_reg,
     plot_resid,
     plot_partreg,
@@ -92,11 +91,6 @@ from .plots.regression import (
     plot_pred_bands,
     # OPTIONAL
     plot_projreg,
-    # OLD
-    # plot_lm_simple,
-    # plot_lm_partial,
-    # plot_lm_partial_old,
-    # plot_projreg_cat,
 )
 
 from .sampling import (
