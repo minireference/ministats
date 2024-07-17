@@ -36,7 +36,7 @@ def plot_resid(lmres, pred=None, lowess=False, ax=None):
     The function can an optional LOWESS curve for the residuals.
     """
     ax = plt.gca() if ax is None else ax
-    if pred is None:
+    if pred is None or pred in ["fittedvalues", "predictions"]:
         xs = lmres.fittedvalues
         xname = "fitted values"
     else:
@@ -258,6 +258,6 @@ def plot_scaleloc(lmres, lowess=True):
     ax = sns.regplot(x=xs, y=sqrt_abs_std_resids, lowess=True)
     # TODO: repalce with scatterplot + manual lowess lineplot
     ax.set_xlabel("fitted values")
-    ax.set_ylabel(r"$\sqrt{|\text{standardized residuals}|}$")
+    ax.set_ylabel(r"$\sqrt{|\mathrm{standardized residuals}|}$")
     return ax
 
