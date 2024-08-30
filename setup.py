@@ -18,6 +18,7 @@ requirements = [
     "pandas>=2",
     "seaborn>=0.13.2",
     "statsmodels>=0.14.1",
+    "arviz>=0.19.0",
 ]
 
 test_requirements = ['pytest>=3', ]
