@@ -40,3 +40,5 @@ so you'll know what's going on under the hood.
    - [x] `plots/figures.py`: special code used for figures in the book (not included in the main namespace)
    - [ ] remove `plots/figures` plotting functions from `ministats` namespace
 - [ ] add more tests
+  - [ ] one-sample equivalence test
+  - [ ] two-sample equivalence test
