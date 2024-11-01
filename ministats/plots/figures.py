@@ -1,8 +1,12 @@
+
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 from scipy.integrate import quad
+from scipy.stats import beta
+from scipy.stats import binom      # used in Bayesian plots
 from scipy.stats import randint    # special handling beta+1=beta
 from scipy.stats import nbinom     # display parameter n as r
 from scipy.stats import hypergeom  # special handling M=a+b, n=a, N=n
@@ -17,10 +21,12 @@ import statsmodels.formula.api as smf
 snspal = sns.color_palette()
 blue, orange, red, purple = snspal[0], snspal[1], snspal[3], snspal[4]
 
-
+from ..hpdi import hpdi_from_grid
+from .probability import plot_pdf
 from ..sampling import gen_sampling_dist
 from ..utils import ensure_containing_dir_exists
 from ..utils import default_labeler
+from ..utils import savefigure
 
 
 # Discrete random variables
@@ -736,3 +742,198 @@ def plot_lm_anova(data, x, y, ax=None):
         # Return axes
         ax.legend()
         return ax
+    
+
+
+# Bayesian statistics
+################################################################################
+
+def prior_times_likelihood_eq_posterior(heads=4, n=5, figsize=(5,5), destdir=None):
+    """
+    Vertical panel showing the prior, likelihood, and posterior functions.
+    """
+    with plt.rc_context({"figure.figsize":figsize}):
+        fig, axs = plt.subplots(3, 1, sharex=True)
+        eps = 0.001
+        ps = np.linspace(0-eps, 1.0+eps, 1000)
+
+        # prior (slightly sloped uniform)
+        slope = -1
+        prior = np.ones_like(ps) - slope/2 + slope*ps
+        prior[(ps < 0) | (ps > 1)] = 0
+        sns.lineplot(x=ps, y=prior, ax=axs[0], color="C1", ls="--", label="prior")
+        axs[0].set_ylabel("$f_{\\Theta}$")
+        axs[0].set_ylim([-0.1,2.4])
+        axs[0].set_yticks([0.0,0.5,1.0,1.5])
+        axs[0].set_yticklabels([0.0,0.5,1.0,1.5])
+        axs[0].legend(loc="upper left")
+        
+        # add 1/C at the top
+        axs[0].text(-0.2, 2.1, r"$1/C$", size=14, color="black")
+        # add x in between
+        axs[0].text(-0.2, -0.4, "$\\times$", size=20, color="black")
+
+        # likelihood
+        likelihood = binom(n, p=ps).pmf(heads)
+        sns.lineplot(x=ps, y=likelihood, ax=axs[1], lw=2, color="black", label="likelihood")
+        axs[1].set_ylabel("$f_{\\mathbf{x}|\\Theta}$")
+        axs[1].set_yticks([0.0, 0.1, 0.2, 0.3, 0.4])
+
+        # add = in between
+        axs[1].text(-0.2, -0.1, "$=$", size=20, color="black")
+
+        # posterior
+        numerator = likelihood * prior
+        posterior = numerator / np.nansum(numerator)
+        posteriord = posterior / (ps[1]-ps[0])
+        sns.lineplot(x=ps, y=posteriord, ax=axs[2], color="C0", label="posterior")
+        axs[2].set_ylabel("$f_{\\Theta|\\mathbf{x}}$")
+        axs[2].set_xlabel("$\\theta$")
+        axs[2].set_xticks(np.linspace(0,1,11))
+        axs[2].set_ylim([-0.1,2.4])
+        axs[2].legend(loc="upper left")
+
+        if destdir:
+            filename = os.path.join(destdir, "prior_times_likelihood_eq_posterior.pdf")
+            savefigure(fig, filename)
+
+
+def prior_times_likelihood_eq_posterior_grid(heads=4, n=5, ngrid=26, figsize=(5,5), destdir=None):
+    """
+    Vertical panel showing the grid approximation to the prior, likelihood, and posterior.
+    """
+    with plt.rc_context({"figure.figsize":figsize}):
+        fig, axs = plt.subplots(3, 1, sharex=True)
+
+        # grid
+        ps = np.linspace(0, 1, ngrid)
+
+        # prior values
+        slope = -1
+        prior = np.ones_like(ps) - slope/2 + slope*ps
+        axs[0].stem(ps, prior, basefmt=" ", linefmt="C1-", label="prior")
+        axs[0].set_ylabel("$f_{\\Theta}$ values")
+        axs[0].set_ylim([-0.1,2.4])
+        axs[0].set_yticks([0.0,0.5,1.0,1.5])
+        axs[0].set_yticklabels([0.0,0.5,1.0,1.5])
+        axs[0].legend(loc="upper left")
+
+        # add 1/C at the top
+        axs[0].text(-0.2, 2.2, r"$1/C$", size=14, color="black")
+        # add x in between
+        axs[0].text(-0.2, -0.4, "$\\times$", size=20, color="black")
+        
+        # likelihood values
+        likelihood = binom(n, p=ps).pmf(heads)
+        axs[1].stem(ps, likelihood, basefmt=" ", linefmt="k", label="likelihood")
+        axs[1].set_ylabel("$f_{\\mathbf{x}|\\Theta}$ values")
+        axs[1].legend(loc="upper left")
+
+        # add = in between
+        axs[1].text(-0.2, -0.1, "$=$", size=20, color="black")
+
+        # posterior values
+        numerator = likelihood * prior
+        posterior = numerator / np.nansum(numerator)
+        posteriord = posterior / (ps[1]-ps[0])
+        axs[2].stem(ps, posteriord, basefmt=" ", linefmt="C0-", label="posterior")
+        axs[2].set_ylabel("$f_{\\Theta|\\mathbf{x}}$ values")
+        axs[2].set_xlabel("$\\theta$")
+        axs[2].set_ylim([-0.1,2.4])
+        axs[2].legend(loc="upper left")
+
+        if destdir:
+            filename = os.path.join(destdir, "prior_times_likelihood_eq_posterior_grid.pdf")
+            savefigure(fig, filename)
+
+
+def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(5.5,2.5), destdir=None):
+    """
+    Focus on the posterior with addotations for point and interval estimates.
+    """
+    eps = 0.001
+    ps = np.linspace(0-eps, 1.0+eps, ngrid)
+
+    # prior (slightly sloped uniform)
+    slope = -1
+    prior = np.ones_like(ps) - slope/2 + slope*ps
+    prior[(ps < 0) | (ps > 1)] = 0
+    # likelihood
+    likelihood = binom(n, p=ps).pmf(heads)
+    likelihood[np.isnan(likelihood)] = 0
+    # posterior
+    numerator = likelihood * prior
+    posterior = numerator / np.sum(numerator)
+
+    # calculate mean, median, mode
+    pmean = np.sum(ps*posterior)
+    pmedian = ps[np.cumsum(posterior).searchsorted(0.5)]
+    pmode = ps[np.argmax(posterior)]
+    bci90 = hpdi_from_grid(ps, posterior, hdi_prob=0.9)
+
+    with plt.rc_context({"figure.figsize":figsize}):
+
+        # plot the posteior
+        porteriord = posterior / (ps[1] - ps[0])
+        ax = sns.lineplot(x=ps, y=porteriord, color="C0", label="posterior")
+        ax.set_ylabel("$f_{\\Theta|\\mathbf{x}}$")
+        ax.set_xlabel("$\\theta$")
+        ax.set_xticks(np.linspace(0,1,11))
+        ax.set_ylim([-0.1,2.4])
+
+        # add mean marker
+        ax.plot(pmean, 0, marker="D", color="C0", ls=" ", label="posterior mean")
+        # add median line
+        post_at_median = porteriord[np.nancumsum(posterior).searchsorted(0.5)]
+        ax.vlines(x=pmedian, ymin=0, ymax=post_at_median, color="C0", lw=0.7)
+        ax.plot(pmedian, post_at_median/2, marker="s", color="C0", ls=" ", label="posterior median")
+        # add mode marker
+        ax.plot(pmode, np.nanmax(porteriord), marker="^", color="C0", ls=" ", label="posterior mode")
+        # plot 90% credible interval
+        ax.hlines(0.15, bci90[0], bci90[1], color="C4", lw=2.2, zorder=0, label="90% bci for $\\theta$")
+        ax.legend()
+        
+        if destdir:
+            filename = os.path.join(destdir, "posterior_visualization.pdf")
+            savefigure(plt.gcf(), filename)
+
+
+def panel_coin_posteriors(ctosses=None, figsize=(6,6), destdir=None):
+    """
+    Plot a 5x2 panel of prior+posterior snapshots of the coin tosses analysis.
+    """
+    ns =       [0, 1, 2, 3, 4, 5, 10, 20, 30,  50]
+    outcomes = [0, 1, 2, 2, 2, 3,  7, 13, 22,  34]
+    # outcomes were generated from coin with true p = 0.7
+    assert len(outcomes) == len(ns)
+    n_rows = int(len(outcomes))
+    if ctosses:
+        # check plots are consistent with the `ctosses` data
+        assert outcomes == [sum(ctosses[:n]) for n in ns]
+
+    with plt.rc_context({"figure.figsize":figsize}):
+        fig, axs_matrix = plt.subplots(n_rows//2, 2, sharex=True)
+        axs = [ax for row in axs_matrix for ax in row]
+        priorRV = None
+        for i, ax in enumerate(axs):
+            heads, n = outcomes[i], ns[i]
+            rvPpost = beta(a=1+heads, b=1+n-heads)
+            plot_pdf(rvPpost, rv_name="P", xlims=[-0.01,1.01], ax=ax)
+            if i==0:
+                ax.set_title("flat prior")
+            else:
+                ax.set_title(f"{heads} heads in {n} tosses")
+            ax.set_yticks([0,1,2,3,4,5,6])
+            # superimpose a plot of the prior as a dashed line
+            if priorRV:
+                plot_pdf(priorRV, rv_name="P", color="C1", ax=ax, ls="--", xlims=[-0.01,1.01])
+            priorRV = rvPpost
+            ax.set_ylabel("$f_{P|\\mathbf{c}^{(%i)}}$" % n)
+            ax.set_ylim(0,6.3)
+        axs[8].set_xlabel("$p$")
+        axs[9].set_xlabel("$p$")
+
+        if destdir:
+            filename = os.path.join(destdir, "panel_coin_posteriors.pdf")
+            savefigure(fig, filename)
+
