@@ -919,17 +919,18 @@ def panel_coin_posteriors(ctosses=None, figsize=(6,6), destdir=None):
             heads, n = outcomes[i], ns[i]
             rvPpost = beta(a=1+heads, b=1+n-heads)
             plot_pdf(rvPpost, rv_name="P", xlims=[-0.01,1.01], ax=ax)
-            if i==0:
-                ax.set_title("flat prior")
-            else:
-                ax.set_title(f"{heads} heads in {n} tosses")
-            ax.set_yticks([0,1,2,3,4,5,6])
             # superimpose a plot of the prior as a dashed line
             if priorRV:
                 plot_pdf(priorRV, rv_name="P", color="C1", ax=ax, ls="--", xlims=[-0.01,1.01])
+            if i==0:
+                ax.set_title("flat prior")
+                ax.set_ylabel("$f_P$")
+            else:
+                ax.set_title(f"{heads} heads in {n} tosses")
+                ax.set_ylabel("$f_{P|\\mathbf{c}^{(%i)}}$" % n)
             priorRV = rvPpost
-            ax.set_ylabel("$f_{P|\\mathbf{c}^{(%i)}}$" % n)
             ax.set_ylim(0,6.3)
+            ax.set_yticks([0,1,2,3,4,5,6])
         axs[8].set_xlabel("$p$")
         axs[9].set_xlabel("$p$")
 
