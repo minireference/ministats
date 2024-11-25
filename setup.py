@@ -18,6 +18,7 @@ requirements = [
     "pandas>=2",
     "seaborn>=0.13.2",
     "statsmodels>=0.14.1",
+    "bambi",
     "arviz",
 ]
 
@@ -26,7 +27,7 @@ test_requirements = ['pytest>=3', ]
 setup(
     author="Ivan Savov",
     author_email='ivan@minireference.com',
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
