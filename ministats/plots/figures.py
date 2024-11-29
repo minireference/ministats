@@ -21,7 +21,7 @@ import statsmodels.formula.api as smf
 snspal = sns.color_palette()
 blue, orange, red, purple = snspal[0], snspal[1], snspal[3], snspal[4]
 
-from ..hpdi import hpdi_from_grid
+from ..bayes import hdi_from_grid
 from .probability import plot_pdf
 from ..sampling import gen_sampling_dist
 from ..utils import ensure_containing_dir_exists
@@ -847,7 +847,7 @@ def prior_times_likelihood_eq_posterior_grid(heads=4, n=5, ngrid=26, figsize=(5,
             savefigure(fig, filename)
 
 
-def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(5.5,2.5), destdir=None):
+def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(6,2.5), destdir=None):
     """
     Focus on the posterior with addotations for point and interval estimates.
     """
@@ -869,7 +869,7 @@ def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(5.5,2.5), destdir
     pmean = np.sum(ps*posterior)
     pmedian = ps[np.cumsum(posterior).searchsorted(0.5)]
     pmode = ps[np.argmax(posterior)]
-    bci90 = hpdi_from_grid(ps, posterior, hdi_prob=0.9)
+    hdi90 = hdi_from_grid(ps, posterior, hdi_prob=0.9)
 
     with plt.rc_context({"figure.figsize":figsize}):
 
@@ -890,7 +890,7 @@ def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(5.5,2.5), destdir
         # add mode marker
         ax.plot(pmode, np.nanmax(porteriord), marker="^", color="C0", ls=" ", label="posterior mode")
         # plot 90% credible interval
-        ax.hlines(0.15, bci90[0], bci90[1], color="C4", lw=2.2, zorder=0, label="90% bci for $\\theta$")
+        ax.hlines(0.15, hdi90[0], hdi90[1], color="C4", lw=2.2, zorder=0, label="90% highest density interval")
         ax.legend()
         
         if destdir:

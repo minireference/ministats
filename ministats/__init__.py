@@ -5,6 +5,12 @@ __email__ = 'ivan@minireference.com'
 __version__ = '0.3.10'
 
 
+from .bayes import (
+    hdi_from_grid,
+    hdi_from_rv,
+    hdi_from_samples,
+)
+
 from .confidence_intervals import (
     ci_mean,
     ci_var,
