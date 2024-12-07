@@ -103,40 +103,68 @@ def bayes_dmeans(xsample, ysample, priors=None,
     return model, idata
 
 
+def _infer_groups_from_idata(idata, group_name="group", other="other"):
+    """
+    Helper function used in `calc_dmeans_stats` and `plot_dmeans_stats`.
+    """
+    post = idata["posterior"]
+    group_dim = group_name + "_dim"
+    if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+        # Infer `groups` from the `sigma_{group_name}_dim` coordinate values
+        sigma_group_dim = "sigma_" + group_name + "_dim"
+        groups = list(post.coords[sigma_group_dim].values)
+    elif group_dim in post.coords and len(post.coords[group_dim]) == 2:
+        # Infer `groups` from the `{group_name}_dim` coordinate values
+        groups = list(post.coords[group_dim].values)
+    else:
+        # Fallback: infer one group name from the `{group_name}_dim` dimension,
+        # and label the other one as generic name `other`
+        known_group = list(post.coords[group_dim].values)[0]
+        groups = [other, known_group]
+    return groups
+
 
 def calc_dmeans_stats(idata, group_name="group"):
     """
     Calculate derived quantities used for the analyisis plots and summaries.
+    Handles both cases where formula `y ~ 1 + group` or `y ~ 0 + group` is used,
+    and either group-specific `sigma` or common `sigma`.
     """
     post = idata["posterior"]
+    groups = _infer_groups_from_idata(idata, group_name=group_name)
 
-    # Infer `groups`` from the `sigma_{group_var}_dim` coordinate values
-    sigma_group = "sigma_" + group_name
-    sigma_group_dim = "sigma_" + group_name + "_dim"
-    groups = list(post[sigma_group].coords[sigma_group_dim].values)
-
-    # Add alias for the difference between means
+    # Add aliases for individual means and calcualte the difference between means
     group_dim = group_name + "_dim"
-    post["dmeans"] = post[group_name].loc[{group_dim:groups[1]}]
+    if "Intercept" in post.data_vars:
+        # CASE A: formula is specified as `y ~ 1 + group`
+        post["dmeans"] = post[group_name].loc[{group_dim:groups[1]}]
+        post["mu_" + groups[0]] = post["Intercept"]
+        post["mu_" + groups[1]] = post["Intercept"] + post["dmeans"]
+    else:
+        # CASE B: formula is specified as `y ~ 0 + group`
+        post["mu_" + groups[0]] = post[group_name].loc[{group_dim:groups[0]}]
+        post["mu_" + groups[1]] = post[group_name].loc[{group_dim:groups[1]}]
+        post["dmeans"] = post["mu_" + groups[1]] - post["mu_" + groups[0]]
 
-    # Calculate the group means
-    post["mu_" + groups[0]] = post["Intercept"]
-    post["mu_" + groups[1]] = post["Intercept"] + post["dmeans"]
-
-    # Calculate sigmas from log-sigmas
-    log_sigma_x = post[sigma_group].loc[{sigma_group_dim:groups[0]}]
-    log_sigma_y = post[sigma_group].loc[{sigma_group_dim:groups[1]}]
-    sigma_x_name = "sigma_" + groups[0]
-    sigma_y_name = "sigma_" + groups[1]
-    post[sigma_x_name] = np.exp(log_sigma_x)
-    post[sigma_y_name] = np.exp(log_sigma_y)
-
-    # Calculate the difference between standard deviations
-    post["dstd"] = post[sigma_y_name] - post[sigma_x_name]
-
-    # Effect size
-    var_pooled = (post[sigma_x_name]**2 + post[sigma_y_name]**2) / 2
-    post["cohend"] = post["dmeans"] / np.sqrt(var_pooled)
+    if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+        # Calculate sigmas from log-sigmas
+        sigma_group = "sigma_" + group_name
+        sigma_group_dim = "sigma_" + group_name + "_dim"
+        log_sigma_x = post[sigma_group].loc[{sigma_group_dim:groups[0]}]
+        log_sigma_y = post[sigma_group].loc[{sigma_group_dim:groups[1]}]
+        sigma_x_name = "sigma_" + groups[0]
+        sigma_y_name = "sigma_" + groups[1]
+        post[sigma_x_name] = np.exp(log_sigma_x)
+        post[sigma_y_name] = np.exp(log_sigma_y)
+        # Calculate the difference between standard deviations
+        post["dstd"] = post[sigma_y_name] - post[sigma_x_name]
+        # Effect size
+        var_pooled = (post[sigma_x_name]**2 + post[sigma_y_name]**2) / 2
+        post["cohend"] = post["dmeans"] / np.sqrt(var_pooled)
+    else:
+        # post["sigma"] is already on the right scale
+        # Effect size
+        post["cohend"] = post["dmeans"] / post["sigma"]
 
     return idata
 
@@ -144,7 +172,9 @@ def calc_dmeans_stats(idata, group_name="group"):
 
 def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlims=None):
     """
-    Generate posterior panel of plots similar to the one in BEST paper:
+    Generate posterior panel of plots similar to the one in BEST paper.
+
+    When model has group-specific sigma, the plot will look like this:
     +---------+-------------+
     | mu1     | post pred 1 |
     | mu2     | post pred 2 |
@@ -152,45 +182,77 @@ def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlim
     | sigma2  | dstd        |
     | nu      | cohend      |
     +---------+-------------+
-    """
 
-    # Infer groups from the `sigma_{group_var}_dim` coordinate values
-    sigma_group = "sigma_" + group_name
-    sigma_group_dim = "sigma_" + group_name + "_dim"
-    groups = list(idata["posterior"][sigma_group].coords[sigma_group_dim].values)
+    For analyzes with a common `sigma`, the plot will look like this:
+    +---------+-------------+
+    | mu1     | post pred 1 |
+    | mu2     | post pred 2 |
+    | dmeans  | dstd        |
+    | nu      | cohend      |
+    +---------+-------------+
+    """
+    post = idata["posterior"]
+    groups = _infer_groups_from_idata(idata, group_name=group_name)
 
     # Compute posterior predictive checks 
     N_rep = 30
-    draws_subset = np.random.choice(idata["posterior"]["draw"].values, N_rep, replace=False)
+    draws_subset = np.random.choice(post["draw"].values, N_rep, replace=False)
     idata_rep = idata.sel(draw=draws_subset)
     df = model.data
-    idata_rep0 = copy.deepcopy(idata_rep)
-    data0 = df[df[group_name]==groups[0]]
-    model.predict(idata_rep0, data=data0, kind="response")
     idata_rep1 = copy.deepcopy(idata_rep)
-    data1 = df[df[group_name]==groups[1]]    
+    data1 = df[df[group_name]==groups[1]]
     model.predict(idata_rep1, data=data1, kind="response")
+    idata_rep0 = copy.deepcopy(idata_rep)
+    if groups[0] == "other":
+        altgroups = list(model.data[group_name].unique())
+        altgroups.remove(groups[1])
+        data0 = df[df[group_name]==altgroups[0]]
+    else:
+        data0 = df[df[group_name]==groups[0]]
+    model.predict(idata_rep0, data=data0, kind="response")
 
     with plt.rc_context({"figure.figsize":figsize}):
-        fig, axs = plt.subplots(5,2)
-        # Left column
-        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[0]], ax=axs[0,0])
-        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[1]], ax=axs[1,0])
-        az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[0]], point_estimate="mode", ax=axs[2,0])
-        az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[1]], point_estimate="mode", ax=axs[3,0])
-        az.plot_posterior(idata, group="posterior", var_names=["nu"], point_estimate="mode", ax=axs[4,0])
-        # Right column
-        az.plot_ppc(idata_rep0, group="posterior", mean=False, ax=axs[0,1])
-        axs[0,1].set_xlim(ppc_xlims)
-        axs[0,1].set_xlabel(None)
-        axs[0,1].set_title("Posterior predictive for " + groups[0])
-        az.plot_ppc(idata_rep1, group="posterior", mean=False, ax=axs[1,1])
-        axs[1,1].set_xlim(ppc_xlims)
-        axs[1,1].set_xlabel(None)
-        axs[1,1].set_title("Posterior predictive for " + groups[1])
-        az.plot_posterior(idata, group="posterior", var_names=["dmeans"], ref_val=0, ax=axs[2,1])
-        az.plot_posterior(idata, group="posterior", var_names=["dstd"], ref_val=0, point_estimate="mode", ax=axs[3,1])
-        az.plot_posterior(idata, group="posterior", var_names=["cohend"], point_estimate="mode", ax=axs[4,1])
+
+        if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+            fig, axs = plt.subplots(5,2)
+            axmu1, axpp1       = axs[0,0], axs[0,1]
+            axmu2, axpp2       = axs[1,0], axs[1,1]
+            axsigma1, axdmeans = axs[2,0], axs[2,1]
+            axsigma2, axdstd   = axs[3,0], axs[3,1]
+            axnu, axcohend     = axs[4,0], axs[4,1]
+        else:
+            fig, axs = plt.subplots(4,2)
+            axmu1, axpp1       = axs[0,0], axs[0,1]
+            axmu2, axpp2       = axs[1,0], axs[1,1]
+            axdmeans, axsigma  = axs[2,0], axs[2,1]
+            axnu, axcohend     = axs[3,0], axs[3,1]
+ 
+        # Top
+        ## Left column
+        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[0]], ax=axmu1)
+        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[1]], ax=axmu2)
+        ## Right column
+        az.plot_ppc(idata_rep0, group="posterior", mean=False, ax=axpp1)
+        axpp1.set_xlim(ppc_xlims)
+        axpp1.set_xlabel(None)
+        axpp1.set_title("Posterior predictive for " + groups[0])
+        az.plot_ppc(idata_rep1, group="posterior", mean=False, ax=axpp2)
+        axpp2.set_xlim(ppc_xlims)
+        axpp2.set_xlabel(None)
+        axpp2.set_title("Posterior predictive for " + groups[1])
+
+        # Middle
+        if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+            az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[0]], point_estimate="mode", ax=axsigma1)
+            az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[1]], point_estimate="mode", ax=axsigma2)
+            az.plot_posterior(idata, group="posterior", var_names=["dstd"], ref_val=0, point_estimate="mode", ax=axdstd)
+        else:
+            az.plot_posterior(idata, group="posterior", var_names=["sigma"], ref_val=0, point_estimate="mode", ax=axsigma)
+        az.plot_posterior(idata, group="posterior", var_names=["dmeans"], ref_val=0, ax=axdmeans)
+
+        # Bottom
+        az.plot_posterior(idata, group="posterior", var_names=["nu"], point_estimate="mode", ax=axnu)
+        az.plot_posterior(idata, group="posterior", var_names=["cohend"], point_estimate="mode", ax=axcohend)
 
     fig.tight_layout()
     return fig
