@@ -108,8 +108,9 @@ def _infer_groups_from_idata(idata, group_name="group", other="other"):
     Helper function used in `calc_dmeans_stats` and `plot_dmeans_stats`.
     """
     post = idata["posterior"]
+    sigma_group = "sigma_" + group_name
     group_dim = group_name + "_dim"
-    if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+    if sigma_group in post.data_vars and "sigma" not in post.data_vars:
         # Infer `groups` from the `sigma_{group_name}_dim` coordinate values
         sigma_group_dim = "sigma_" + group_name + "_dim"
         groups = list(post.coords[sigma_group_dim].values)
@@ -146,9 +147,9 @@ def calc_dmeans_stats(idata, group_name="group"):
         post["mu_" + groups[1]] = post[group_name].loc[{group_dim:groups[1]}]
         post["dmeans"] = post["mu_" + groups[1]] - post["mu_" + groups[0]]
 
-    if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+    sigma_group = "sigma_" + group_name
+    if sigma_group in post.data_vars and "sigma" not in post.data_vars:
         # Calculate sigmas from log-sigmas
-        sigma_group = "sigma_" + group_name
         sigma_group_dim = "sigma_" + group_name + "_dim"
         log_sigma_x = post[sigma_group].loc[{sigma_group_dim:groups[0]}]
         log_sigma_y = post[sigma_group].loc[{sigma_group_dim:groups[1]}]
@@ -213,7 +214,8 @@ def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlim
 
     with plt.rc_context({"figure.figsize":figsize}):
 
-        if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+        sigma_group = "sigma_" + group_name
+        if sigma_group in post.data_vars and "sigma" not in post.data_vars:
             fig, axs = plt.subplots(5,2)
             axmu1, axpp1       = axs[0,0], axs[0,1]
             axmu2, axpp2       = axs[1,0], axs[1,1]
@@ -242,7 +244,7 @@ def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlim
         axpp2.set_title("Posterior predictive for " + groups[1])
 
         # Middle
-        if "sigma_group" in post.data_vars and "sigma" not in post.data_vars:
+        if sigma_group in post.data_vars and "sigma" not in post.data_vars:
             az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[0]], point_estimate="mode", ax=axsigma1)
             az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[1]], point_estimate="mode", ax=axsigma2)
             az.plot_posterior(idata, group="posterior", var_names=["dstd"], ref_val=0, point_estimate="mode", ax=axdstd)
