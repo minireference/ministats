@@ -149,8 +149,8 @@ def plot_partreg(lmres, pred, ax=None):
     # Add descriptive labels
     if len(others_formula) > 20:
         others_formula = "other"
-    ax.set_xlabel(f"$\\mathtt{{{pred}}}$~$\\mathtt{{{others_formula}}}\,$ residuals")
-    ax.set_ylabel(f"$\\mathtt{{{outname}}}$~$\\mathtt{{{others_formula}}}\,$ residuals")
+    ax.set_xlabel(f"$\\mathtt{{{pred}}}$~$\\mathtt{{{others_formula}}}$ residuals")
+    ax.set_ylabel(f"$\\mathtt{{{outname}}}$~$\\mathtt{{{others_formula}}}$ residuals")
     return ax
 
 
@@ -202,9 +202,9 @@ def plot_partreg_cat(lmres, pred, ax=None):
         others_quoted = ["Q('" + other + "')" for other in others]
         others_formula += "+" + "+".join(others_quoted)
         for other in others:
-            m = re.match("C\((?P<varname>.*)\).*", other)
+            m = re.match("C\\((?P<varname>.*)\\).*", other)
             if m:
-                varname = m.groupdict()["varname"]
+                varname = m.group("varname")
                 other_clean = "C(" + varname + ")"
             else:
                 other_clean = other

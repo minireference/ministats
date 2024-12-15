@@ -282,7 +282,7 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
             if model == expon:
                 display_params = {"scale":params["scale"]}
             elif model == gamma:
-                lam = 1/params["scale"]
+                lam = 1 / params["scale"]
                 if lam >= 1:
                     lam = int(lam)
                 display_params = {"a": params["a"], "lam":lam}

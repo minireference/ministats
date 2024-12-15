@@ -81,6 +81,12 @@ def bayes_dmeans(xsample, ysample, priors=None,
     """
     Compare the means of two groups using a Bayesian model.
     Returns a tuple containing the Bambi model and the InferenceData object.
+
+    Usage example:
+    >>> treated = iqs2[iqs2["group"]=="treat"]["iq"].values
+    >>> controls = iqs2[iqs2["group"]=="ctrl"]["iq"].values
+    >>> mod, idata = bayes_dmeans(treated, controls, var_name="iq",
+                                  group_name="group", groups=["treat", "ctrl"])
     """
     # Pacakge raw data samples as a DataFrame
     m, n = len(xsample), len(ysample)
@@ -127,14 +133,14 @@ def _infer_groups_from_idata(idata, group_name="group", other="other"):
 
 def calc_dmeans_stats(idata, group_name="group"):
     """
-    Calculate derived quantities used for the analyisis plots and summaries.
+    Calculate derived quantities used for the analysis plots and summaries.
     Handles both cases where formula `y ~ 1 + group` or `y ~ 0 + group` is used,
     and either group-specific `sigma` or common `sigma`.
     """
     post = idata["posterior"]
     groups = _infer_groups_from_idata(idata, group_name=group_name)
 
-    # Add aliases for individual means and calcualte the difference between means
+    # Add aliases for individual means and calculate the difference between means
     group_dim = group_name + "_dim"
     if "Intercept" in post.data_vars:
         # CASE A: formula is specified as `y ~ 1 + group`

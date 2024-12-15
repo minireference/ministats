@@ -9,6 +9,8 @@ from .bayes import (
     hdi_from_grid,
     hdi_from_rv,
     hdi_from_samples,
+    calc_dmeans_stats,
+    plot_dmeans_stats,
 )
 
 from .confidence_intervals import (
