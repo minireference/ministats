@@ -776,7 +776,7 @@ def prior_times_likelihood_eq_posterior(heads=4, n=5, figsize=(5,5), destdir=Non
         # likelihood
         likelihood = binom(n, p=ps).pmf(heads)
         sns.lineplot(x=ps, y=likelihood, ax=axs[1], lw=2, color="black", label="likelihood")
-        axs[1].set_ylabel("$f_{\\mathbf{x}|\\Theta}$")
+        axs[1].set_ylabel("$L_{\\mathbf{x}}$")
         axs[1].set_yticks([0.0, 0.1, 0.2, 0.3, 0.4])
 
         # add = in between
@@ -826,7 +826,7 @@ def prior_times_likelihood_eq_posterior_grid(heads=4, n=5, ngrid=26, figsize=(5,
         # likelihood values
         likelihood = binom(n, p=ps).pmf(heads)
         axs[1].stem(ps, likelihood, basefmt=" ", linefmt="k", label="likelihood")
-        axs[1].set_ylabel("$f_{\\mathbf{x}|\\Theta}$ values")
+        axs[1].set_ylabel("$L_{\\mathbf{x}}$ values")
         axs[1].legend(loc="upper left")
 
         # add = in between
