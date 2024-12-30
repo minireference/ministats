@@ -1,13 +1,17 @@
 import copy
 
+
 import arviz as az
-import bambi as bmb
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.optimize import fmin
 
-
+# Silence annoying warning about missing BLAS library
+# WARNING (pytensor.tensor.blas): Using NumPy C-API based implementation for BLAS functions.
+import logging
+logging.getLogger("pytensor.tensor.blas").setLevel(logging.ERROR)
+import bambi as bmb
 
 
 
