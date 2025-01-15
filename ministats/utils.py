@@ -1,5 +1,26 @@
+from contextlib import contextmanager
+import logging
 import os
+
 import matplotlib.pyplot as plt
+
+
+@contextmanager
+def loglevel(level, module=None):
+    """
+    Context manager to set logging level locally.
+    Useful for silencing the output of Bambi model fit method.
+    """
+    if isinstance(level, str):
+        level = level.upper()
+        level = logging.getLevelNamesMapping()[level]
+    logger = logging.getLogger(module)
+    current_level = logger.getEffectiveLevel()
+    logger.setLevel(level)
+    try:
+        yield
+    finally:
+        logger.setLevel(current_level)
 
 
 def ensure_containing_dir_exists(filepath):
