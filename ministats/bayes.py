@@ -181,7 +181,8 @@ def calc_dmeans_stats(idata, group_name="group"):
 
 
 
-def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlims=None):
+def plot_dmeans_stats(model, idata, group_name="group",
+                      figsize=(8,10), ppc_xlims=None, ppc_ylims=None):
     """
     Generate posterior panel of plots similar to the one in BEST paper.
 
@@ -206,21 +207,29 @@ def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlim
     groups = _infer_groups_from_idata(idata, group_name=group_name)
 
     # Compute posterior predictive checks 
-    N_rep = 30
+    N_rep = 20
     draws_subset = np.random.choice(post["draw"].values, N_rep, replace=False)
     idata_rep = idata.sel(draw=draws_subset)
     df = model.data
-    idata_rep1 = copy.deepcopy(idata_rep)
+    # PPC group 1
     data1 = df[df[group_name]==groups[1]]
+    idata_rep1 = copy.deepcopy(idata_rep).sel(__obs__=data1.index)
     model.predict(idata_rep1, data=data1, kind="response")
-    idata_rep0 = copy.deepcopy(idata_rep)
+    # PPC group 0
     if groups[0] == "other":
         altgroups = list(model.data[group_name].unique())
         altgroups.remove(groups[1])
         data0 = df[df[group_name]==altgroups[0]]
     else:
         data0 = df[df[group_name]==groups[0]]
+    idata_rep0 = copy.deepcopy(idata_rep).sel(__obs__=data0.index)
     model.predict(idata_rep0, data=data0, kind="response")
+    # Set x-lims automatically based on range of outcome variable
+    if ppc_xlims is None:
+        oname = model.response_component.term.name
+        obs = df[oname]
+        omin, omax, orange = obs.min(), obs.max(), obs.max()-obs.min()
+        ppc_xlims = [omin-0.1*orange, omax+0.1*orange]
 
     with plt.rc_context({"figure.figsize":figsize}):
 
@@ -252,6 +261,15 @@ def plot_dmeans_stats(model, idata, group_name="group", figsize=(8,10), ppc_xlim
         axpp2.set_xlim(ppc_xlims)
         axpp2.set_xlabel(None)
         axpp2.set_title("Posterior predictive for " + groups[1])
+        # Set same y-lims for the two PPC plots
+        if ppc_ylims is None:
+            ymin = min(axpp1.get_ylim()[0], axpp2.get_ylim()[0])
+            ymax = max(axpp1.get_ylim()[1], axpp2.get_ylim()[1])
+            axpp1.set_ylim([ymin,ymax])
+            axpp2.set_ylim([ymin,ymax])
+        else:
+            axpp1.set_ylim(ppc_ylims)
+            axpp2.set_ylim(ppc_ylims)
 
         # Middle
         if sigma_group in post.data_vars and "sigma" not in post.data_vars:
