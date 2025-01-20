@@ -250,8 +250,10 @@ def plot_dmeans_stats(model, idata, group_name="group",
  
         # Top
         ## Left column
-        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[0]], ax=axmu1)
-        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[1]], ax=axmu2)
+        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[0]],
+                          round_to=3, ax=axmu1)
+        az.plot_posterior(idata, group="posterior", var_names=["mu_" + groups[1]],
+                          round_to=3, ax=axmu2)
         ## Right column
         az.plot_ppc(idata_rep0, group="posterior", mean=False, ax=axpp1)
         axpp1.set_xlim(ppc_xlims)
@@ -273,16 +275,23 @@ def plot_dmeans_stats(model, idata, group_name="group",
 
         # Middle
         if sigma_group in post.data_vars and "sigma" not in post.data_vars:
-            az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[0]], point_estimate="mode", ax=axsigma1)
-            az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[1]], point_estimate="mode", ax=axsigma2)
-            az.plot_posterior(idata, group="posterior", var_names=["dstd"], ref_val=0, point_estimate="mode", ax=axdstd)
+            az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[0]],
+                              point_estimate="mode", round_to=3, ax=axsigma1)
+            az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[1]],
+                              point_estimate="mode", round_to=3, ax=axsigma2)
+            az.plot_posterior(idata, group="posterior", var_names=["dstd"], ref_val=0,
+                              point_estimate="mode", round_to=3, ax=axdstd)
         else:
-            az.plot_posterior(idata, group="posterior", var_names=["sigma"], ref_val=0, point_estimate="mode", ax=axsigma)
-        az.plot_posterior(idata, group="posterior", var_names=["dmeans"], ref_val=0, ax=axdmeans)
+            az.plot_posterior(idata, group="posterior", var_names=["sigma"], ref_val=0,
+                              point_estimate="mode", ax=axsigma)
+        az.plot_posterior(idata, group="posterior", var_names=["dmeans"], ref_val=0,
+                          round_to=3, ax=axdmeans)
 
         # Bottom
-        az.plot_posterior(idata, group="posterior", var_names=["nu"], point_estimate="mode", ax=axnu)
-        az.plot_posterior(idata, group="posterior", var_names=["cohend"], point_estimate="mode", ax=axcohend)
+        az.plot_posterior(idata, group="posterior", var_names=["nu"],
+                          point_estimate="mode", ax=axnu)
+        az.plot_posterior(idata, group="posterior", var_names=["cohend"], ref_val=0,
+                          point_estimate="mode", round_to=3, ax=axcohend)
 
     fig.tight_layout()
     return fig
