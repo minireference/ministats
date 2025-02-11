@@ -389,7 +389,7 @@ def plot_sampling_dist(stats, label=None, xlims=None, ax=None,
         binwidth = (xlims[1]-xlims[0]) / 30            
     
     # 2. Plot a histogram of the sampling distribution
-    sns.histplot(stats, binwidth=binwidth, stat="density", color="r", ax=ax, label=label)
+    sns.histplot(stats, binwidth=binwidth, stat="density", color="C1", ax=ax, label=label)
 
     # 3. add the scatter plot of `stats` below
     y_offset = 1/(100*binwidth)

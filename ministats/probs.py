@@ -54,7 +54,7 @@ class MixtureModel(rv_continuous):
         if weights is None:
             weights = [1 for _ in submodels]
         if len(weights) != len(submodels):
-            raise(ValueError('The number of submodels and weights must be equal.'))
+            raise ValueError('The number of submodels and weights must be equal.')
         self.weights = [w / sum(weights) for w in weights]
 
     def _pdf(self, x):
