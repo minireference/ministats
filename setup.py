@@ -52,6 +52,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/minireference/ministats',
-    version='0.3.14',
+    version='0.3.15',
     zip_safe=False,
 )
