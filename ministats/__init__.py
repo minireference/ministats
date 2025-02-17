@@ -6,6 +6,7 @@ __version__ = '0.3.14'
 
 
 from .bayes import (
+    mode_from_samples,
     hdi_from_grid,
     hdi_from_rv,
     hdi_from_samples,

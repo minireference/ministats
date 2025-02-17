@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.optimize import fmin
+from scipy.stats import gaussian_kde
 
 # Silence annoying warning about missing BLAS library
 # WARNING (pytensor.tensor.blas): Using NumPy C-API based implementation for BLAS functions.
@@ -13,6 +14,20 @@ import logging
 logging.getLogger("pytensor.tensor.blas").setLevel(logging.ERROR)
 import bambi as bmb
 
+
+
+# ESTIMATORS
+################################################################################
+
+def mode_from_samples(samples, prec=0.0001, **kwargs):
+    """
+    Calculate the mode (maximum) of the empirical distribution of `samples` by
+    approximating the probability density function using KDE and finding its max.
+    See also `az.plots.plot_utils.calculate_point_estimate("mode", samples)`.
+    """
+    values = np.arange(min(samples), max(samples), prec)
+    kde = gaussian_kde(samples, **kwargs)
+    return values[np.argmax(kde(values))]
 
 
 # CREDIBILITY INTERVALS
