@@ -183,7 +183,7 @@ def calc_dmeans_stats(idata, group_name="group"):
         post[sigma_x_name] = np.exp(log_sigma_x)
         post[sigma_y_name] = np.exp(log_sigma_y)
         # Calculate the difference between standard deviations
-        post["dstd"] = post[sigma_y_name] - post[sigma_x_name]
+        post["dsigmas"] = post[sigma_y_name] - post[sigma_x_name]
         # Effect size
         var_pooled = (post[sigma_x_name]**2 + post[sigma_y_name]**2) / 2
         post["cohend"] = post["dmeans"] / np.sqrt(var_pooled)
@@ -206,7 +206,7 @@ def plot_dmeans_stats(model, idata, group_name="group",
     | mu1     | post pred 1 |
     | mu2     | post pred 2 |
     | sigma1  | dmeans      |
-    | sigma2  | dstd        |
+    | sigma2  | dsigmas     |
     | nu      | cohend      |
     +---------+-------------+
 
@@ -214,7 +214,7 @@ def plot_dmeans_stats(model, idata, group_name="group",
     +---------+-------------+
     | mu1     | post pred 1 |
     | mu2     | post pred 2 |
-    | dmeans  | dstd        |
+    | dmeans  | dsigmas     |
     | nu      | cohend      |
     +---------+-------------+
     """
@@ -251,11 +251,11 @@ def plot_dmeans_stats(model, idata, group_name="group",
         sigma_group = "sigma_" + group_name
         if sigma_group in post.data_vars and "sigma" not in post.data_vars:
             fig, axs = plt.subplots(5,2)
-            axmu1, axpp1       = axs[0,0], axs[0,1]
-            axmu2, axpp2       = axs[1,0], axs[1,1]
-            axsigma1, axdmeans = axs[2,0], axs[2,1]
-            axsigma2, axdstd   = axs[3,0], axs[3,1]
-            axnu, axcohend     = axs[4,0], axs[4,1]
+            axmu1, axpp1        = axs[0,0], axs[0,1]
+            axmu2, axpp2        = axs[1,0], axs[1,1]
+            axsigma1, axdmeans  = axs[2,0], axs[2,1]
+            axsigma2, axdsigmas = axs[3,0], axs[3,1]
+            axnu, axcohend      = axs[4,0], axs[4,1]
         else:
             fig, axs = plt.subplots(4,2)
             axmu1, axpp1       = axs[0,0], axs[0,1]
@@ -294,18 +294,21 @@ def plot_dmeans_stats(model, idata, group_name="group",
                               point_estimate="mode", round_to=3, ax=axsigma1)
             az.plot_posterior(idata, group="posterior", var_names=["sigma_" + groups[1]],
                               point_estimate="mode", round_to=3, ax=axsigma2)
-            az.plot_posterior(idata, group="posterior", var_names=["dstd"], ref_val=0,
-                              point_estimate="mode", round_to=3, ax=axdstd)
+            az.plot_posterior(idata, group="posterior", var_names=["dsigmas"], hdi_prob=0.95,
+                              point_estimate="mode", round_to=3, ax=axdsigmas)
+            axdsigmas.axvline(0, c="C2", lw=2)
         else:
-            az.plot_posterior(idata, group="posterior", var_names=["sigma"], ref_val=0,
+            az.plot_posterior(idata, group="posterior", var_names=["sigma"], hdi_prob=0.95,
                               point_estimate="mode", ax=axsigma)
-        az.plot_posterior(idata, group="posterior", var_names=["dmeans"], ref_val=0,
+            axsigma.axvline(0, c="C2", lw=2)
+        az.plot_posterior(idata, group="posterior", var_names=["dmeans"], hdi_prob=0.95,
                           round_to=3, ax=axdmeans)
+        axdmeans.axvline(0, c="C2", lw=2)
 
         # Bottom
         az.plot_posterior(idata, group="posterior", var_names=["nu"],
                           point_estimate="mode", ax=axnu)
-        az.plot_posterior(idata, group="posterior", var_names=["cohend"], ref_val=0,
+        az.plot_posterior(idata, group="posterior", var_names=["cohend"],
                           point_estimate="mode", round_to=3, ax=axcohend)
 
     fig.tight_layout()
@@ -334,7 +337,7 @@ def best_dmeans_calc(idata, var_name="z", group_names=["treatment", "control"]):
     """
     Performs various calculations on the inference data object `idata`:
       - `dmeans`: difference between groups means
-      - `dstd`: difference between groups standard deviaitons
+      - `dsigmas`: difference between groups standard deviaitons
       - 
       - `log10(nu)`: the normality parameter 
 
