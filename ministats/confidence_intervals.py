@@ -9,6 +9,7 @@ from .sampling import gen_boot_dist
 
 
 
+
 # CONFIDENCE INTERVALS
 ################################################################################
 
@@ -27,7 +28,7 @@ def ci_mean(sample, alpha=0.1, method="a"):
         t_l = tdist(df=n-1).ppf(alpha/2)
         t_u = tdist(df=n-1).ppf(1-alpha/2)
         return [xbar + t_l*sehat, xbar + t_u*sehat]
-    elif method == "b":          # bootstrap estimation
+    elif method == "b":      # bootstrap estimation
         xbars_boot = gen_boot_dist(sample, estfunc=mean)
         return [np.quantile(xbars_boot, alpha/2),
                 np.quantile(xbars_boot, 1-alpha/2)]
@@ -46,7 +47,7 @@ def ci_var(sample, alpha=0.1, method="a"):
         q_l = chi2(df=n-1).ppf(alpha/2)
         q_u = chi2(df=n-1).ppf(1-alpha/2)
         return [(n-1)*s2/q_u, (n-1)*s2/q_l]
-    elif method == "b":          # bootstrap estimation
+    elif method == "b":      # bootstrap estimation
         vars_boot = gen_boot_dist(sample, estfunc=var)
         return [np.quantile(vars_boot, alpha/2),
                 np.quantile(vars_boot, 1-alpha/2)]
@@ -68,7 +69,7 @@ def ci_dmeans(xsample, ysample, alpha=0.1, method="a"):
         t_l = tdist(df=dfD).ppf(alpha/2)
         t_u = tdist(df=dfD).ppf(1-alpha/2)
         return [dhat + t_l*seD, dhat + t_u*seD]
-    elif method == "b":          # bootstrap estimation
+    elif method == "b":      # bootstrap estimation
         xbars_boot = gen_boot_dist(xsample, np.mean)
         ybars_boot = gen_boot_dist(ysample, np.mean)
         dmeans_boot = np.subtract(xbars_boot,ybars_boot)

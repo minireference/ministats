@@ -1,7 +1,8 @@
 import copy
-
+import logging
 
 import arviz as az
+import bambi as bmb
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,10 +10,8 @@ from scipy.optimize import fmin
 from scipy.stats import gaussian_kde
 
 # Silence annoying warning about missing BLAS library
-# WARNING (pytensor.tensor.blas): Using NumPy C-API based implementation for BLAS functions.
-import logging
+# WARNING: Using NumPy C-API based implementation for BLAS functions.
 logging.getLogger("pytensor.tensor.blas").setLevel(logging.ERROR)
-import bambi as bmb
 
 
 
@@ -64,7 +63,6 @@ def hdi_from_grid(params, probs, hdi_prob=0.9):
     return [hdi_left, hdi_right]
 
 
-
 def hdi_from_rv(rv, hdi_prob=0.9):
     probstart0 = (1 - hdi_prob) / 2
     def width(probstart):
@@ -73,7 +71,6 @@ def hdi_from_rv(rv, hdi_prob=0.9):
     hdi_left = rv.ppf(min_probstart)
     hdi_right = rv.ppf(min_probstart + hdi_prob)
     return [hdi_left, hdi_right]
-
 
 
 def hdi_from_samples(samples, hdi_prob=0.9):
@@ -90,9 +87,16 @@ def hdi_from_samples(samples, hdi_prob=0.9):
     return [hdi_left, hdi_right]
 
 
+def hdi_from_idata(idata, var_name, hdi_prob=0.9):
+    stats_df = az.summary(idata, kind="stats", hdi_prob=hdi_prob, var_names=var_name)
+    hdi_left = stats_df.iloc[0,2]
+    hdi_right = stats_df.iloc[0,3]
+    return [hdi_left, hdi_right]
 
 
-# COMPARING TWO GRUPS
+
+
+# COMPARING TWO GROUPS
 ################################################################################
 
 def bayes_dmeans(xsample, ysample, priors=None,
@@ -124,7 +128,6 @@ def bayes_dmeans(xsample, ysample, priors=None,
 
     # Fit the model
     idata = model.fit(draws=2000)
-
     return model, idata
 
 
@@ -201,22 +204,22 @@ def plot_dmeans_stats(model, idata, group_name="group",
     """
     Generate posterior panel of plots similar to the one in BEST paper.
 
-    When model has group-specific sigma, the plot will look like this:
-    +---------+-------------+
-    | mu1     | post pred 1 |
-    | mu2     | post pred 2 |
-    | sigma1  | dmeans      |
-    | sigma2  | dsigmas     |
-    | nu      | cohend      |
-    +---------+-------------+
+    When model has group-specific `sigma`, the plot will look like this:
+    +---------+--------------+
+    | mu1     | post pred 1  |
+    | mu2     | post pred 2  |
+    | sigma1  | dmeans       |
+    | sigma2  | dsigmas      |
+    | nu      | cohend       |
+    +---------+--------------+
 
     For analyzes with a common `sigma`, the plot will look like this:
-    +---------+-------------+
-    | mu1     | post pred 1 |
-    | mu2     | post pred 2 |
-    | dmeans  | dsigmas     |
-    | nu      | cohend      |
-    +---------+-------------+
+    +---------+--------------+
+    | mu1     | post pred 1  |
+    | mu2     | post pred 2  |
+    | dmeans  | dsigmas      |
+    | nu      | cohend       |
+    +---------+--------------+
     """
     post = idata["posterior"]
     groups = _infer_groups_from_idata(idata, group_name=group_name)
@@ -350,7 +353,6 @@ def best_dmeans_plots():
     Generte the panel of plots similar to the BEST paper.
     """
     pass
-
 
 
 

@@ -20,6 +20,7 @@ requirements = [
     "statsmodels>=0.14.1",
     "bambi",
     "arviz",
+    "pingouin>=0.5.5",
 ]
 
 test_requirements = ['pytest>=3', ]
