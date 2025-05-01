@@ -1,17 +1,22 @@
+from collections import defaultdict
+import os
+
 import arviz as az
+from arviz.plots.plot_utils import calculate_point_estimate as calc_point_est
 import bambi as bmb
 import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind
 import pingouin as pg
+from scipy.stats import norm
+from scipy.stats import ttest_ind
 
-from arviz.plots.plot_utils import calculate_point_estimate as calc_point_est
 
 from ..bayes import calc_dmeans_stats
 from ..bayes import hdi_from_idata
 from ..confidence_intervals import ci_dmeans
 from ..hypothesis_tests import permutation_test_dmeans
 from ..hypothesis_tests import ttest_dmeans
+from ..utils import loglevel
 
 
 # SENSITIVITY ANALYSIS
@@ -37,7 +42,8 @@ def fit_bayesian_model_iqs2(iqs2, new_priors, random_seed=42):
                      link={"mu": "identity", "sigma": "log"},
                      priors=priors2,
                      data=iqs2)
-    idata2 = mod2.fit(draws=2000, random_seed=random_seed)
+    with loglevel("ERROR", module="pymc"):
+        idata2 = mod2.fit(draws=2000, random_seed=random_seed, progressbar=False)
     return idata2
 
 
@@ -100,11 +106,11 @@ def sens_analysis_dmeans_iqs2(iqs2):
 
 
     experiments = [
-        dict(name="orig", mean="orig",    sigma="orig", nu="orig"),
-        dict(name="orig", mean="wider",   sigma="orig", nu="orig"),
-        dict(name="orig", mean="tighter", sigma="orig", nu="orig"),
-        dict(name="orig", mean="orig",    sigma="low",  nu="orig"),
-        dict(name="orig", mean="orig",    sigma="orig", nu="expon"),
+        dict(name="orig", mean="orig",    sigma="orig", nu="orig",  seed=42),
+        dict(name="orig", mean="wider",   sigma="orig", nu="orig",  seed=43),
+        dict(name="orig", mean="tighter", sigma="orig", nu="orig",  seed=44),
+        dict(name="orig", mean="orig",    sigma="low",  nu="orig",  seed=45),
+        dict(name="orig", mean="orig",    sigma="orig", nu="expon", seed=46),
     ]
 
     # Prepare results table
@@ -114,6 +120,7 @@ def sens_analysis_dmeans_iqs2(iqs2):
 
 
     for i, exp in enumerate(experiments):
+        print("fitting model", i, "...")
         priors = {}  # priors to be used for current run
 
         # Set priors based on specificatino in `exp`
@@ -125,7 +132,7 @@ def sens_analysis_dmeans_iqs2(iqs2):
         priors["nu"] = Nu_priors[exp["nu"]]["bambi"]
 
         # Fit model
-        idata2 = fit_bayesian_model_iqs2(iqs2, priors, random_seed=42)
+        idata2 = fit_bayesian_model_iqs2(iqs2, priors, random_seed=exp["seed"])
         calc_dmeans_stats(idata2, group_name="group")
 
         # Calculate results
@@ -161,22 +168,62 @@ def sens_analysis_dmeans_iqs2(iqs2):
 # PERFORMANCE ANALYSIS
 ################################################################################
 
-def gen_dmeans_datasets():
-	"""
+def gen_dmeans_dataset(n, Delta, prop_outliers=0, random_seed=42):
+    """
+    Generate a dataset with two-groups of size `n`.
+    The mean of the control group is `0`,
+    the mean of the treatment group is `Delta`.
+    We'll make a proportion `prop_outliers` of the values
+    in each group outliers, comeing from a populaiton
+    with much wider standdard deviaiton.
+    """
+    np.random.seed(random_seed)
+    
+    # Generate control group
+    controls = norm(0, 1).rvs(n)
+
+    # Generate treated group
+    treated = norm(0 + Delta, 1).rvs(n)
+
+    # Add outliers
+    n_outliers = int(prop_outliers * n)
+    control_outliers = norm(0, 5).rvs(n_outliers)  
+    controls[0:n_outliers] = control_outliers
+    treated_outliers = norm(0 + Delta, 5).rvs(n_outliers) 
+    treated[0:n_outliers] = treated_outliers
+
+    # Package dataset as a Pandas DataFrame
+    groups = ["treat"]*len(treated) + ["ctrl"]*len(controls)
+    values = np.concatenate((treated, controls))
+    dataset = pd.DataFrame({"group": groups, "value": values})
+    return dataset
+
+
+def gen_dmeans_datasets(ns, Deltas, outliers_options, random_seed_start=45):
+    """
 	This function prepares a dictionary of datasets that exhibit different
 	combinations of the characteristics we might encounter in the real world.
 	To keep things simple,
 	we'll assume both populations have unit standard deviation sigma_A = sigma_B = 1
 	and group A has mean mu_A=0.
-	- Effect size Delta: 0, 0.2, 0.5, 1.0,
-	  which means Group B has mean mu_B= 0, 0.2, 0.5, 1.0.
+    - Sample size: n=20, n=30, n=50, or n=100
+    - Effect size Delta: 0, 0.2, 0.5, 1.0,
+	  which means Group B has mean mu_B= 0, 0.2, 0.5, 0.8, 1.3.
     - Outliers: no outliers, some outliers, lots of outliers.
-    - Sample size: $m=n=20$, $m=n=30$, $m=n=50$, $m=n=100$.
     We'll generate samples from each combination of conditions,
     then use various models to perform the hypothesis tests and count
     the number of times we reach the correct decision.
     """
-	pass
+    random_seed = random_seed_start
+    dataset_specs = []
+    for n in ns:
+        for Delta in Deltas:
+            for outliers in outliers_options:
+                spec = dict(n=n,  Delta=Delta, outliers=outliers, random_seed=random_seed)
+                dataset_specs.append(spec)
+                random_seed += 1
+
+    return dataset_specs
 
 
 
@@ -203,24 +250,21 @@ def calc_dmeans(idata, group_name="group", groups=["ctrl", "treat"]):
 
 
 
-def fit_dmeans_model(dataset, model, random_seed=42):
+def fit_dmeans_models(dataset, random_seed=42):
     """
-    Fit a one of the following models for the difference of two means:
+    Fit the following models for the difference of two means:
     - Permutation test from Section 3.5
     - Welch's two-sample $t$-test from Section 3.5
     - Normal Bayesian model that uses normal as data model
     - Robust Bayesian model that uses t distribution as data model
     - Bayes factor using JZS prior (using `pingouin` library)
-
-    For each model, we run the hypothesis test to decide if the populations are the same or different,
-    based on the conventional cutoff 5% and construct interval a 90% interval estimates
-    for the difference between population means: Delta = mu_B - mu_A.
+    For each model, we run the hypothesis test to decide if the populations
+    are the same or different based on the conventional cutoff level of 5%.
+    We also construct a 90% confidnece interval for the diff. between `Delta`.
     """
-    model = model.lower()
-    assert model in ["perm", "welch", "norm_bayes", "robust_bayes", "bf"]
+    models = ["perm", "welch", "norm_bayes", "robust_bayes", "bf"]
 
     # Helper functions to get decision in each situation
-    ################################################################################
     def get_pval_decision(pval, alpha=0.05):
         if pval <= alpha:
             return "reject H0"
@@ -244,20 +288,22 @@ def fit_dmeans_model(dataset, model, random_seed=42):
     treated = dataset[dataset["group"]=="treat"]["value"].values
     controls = dataset[dataset["group"]=="ctrl"]["value"].values
 
-    # DIFFERENT MODELS
-    ################################################################################
-    if model == "perm":
+    # Fit the models
+    results = {}
+    if "perm" in models:
         np.random.seed(random_seed)
         pval = permutation_test_dmeans(treated, controls)
         decision = get_pval_decision(pval)
         ci90 = ci_dmeans(treated, controls, alpha=0.1, method="b")
+        results["perm"] = {"decision": decision, "ci90": ci90}
 
-    elif model == "welch":
+    if "welch" in models:
         pval = ttest_dmeans(treated, controls, equal_var=False, alt="two-sided")
         decision = get_pval_decision(pval)
         ci90 = ci_dmeans(treated, controls, alpha=0.1, method="a")
+        results["welch"] = {"decision": decision, "ci90": ci90}
 
-    elif model == "norm_bayes":
+    if "norm_bayes" in models:
         priors = {
             "group": bmb.Prior("Normal", mu=0, sigma=2),
             "sigma": {
@@ -267,13 +313,15 @@ def fit_dmeans_model(dataset, model, random_seed=42):
         }
         formula = bmb.Formula("value ~ 0 + group", "sigma ~ 0 + group")
         norm_mod = bmb.Model(formula=formula, family="gaussian", priors=priors, data=dataset)
-        idata = norm_mod.fit(draws=2000, random_seed=random_seed)
+        with loglevel("ERROR", module="pymc"):
+            idata = norm_mod.fit(draws=2000, random_seed=random_seed, progressbar=False)
         calc_dmeans(idata)
         ci95 = hdi_from_idata(idata, var_name="dmeans", hdi_prob=0.95)
         decision = get_ci_decision(0, ci95)
         ci90 = hdi_from_idata(idata, var_name="dmeans", hdi_prob=0.9)
+        results["norm_bayes"] = {"decision": decision, "ci90": ci90}
 
-    elif model == "robust_bayes":
+    if "robust_bayes" in models:
         priors = {
             "group": bmb.Prior("Normal", mu=0, sigma=2),
             "sigma": {
@@ -283,38 +331,168 @@ def fit_dmeans_model(dataset, model, random_seed=42):
         }
         formula = bmb.Formula("value ~ 0 + group", "sigma ~ 0 + group")
         robust_mod = bmb.Model(formula=formula, family="t", priors=priors, data=dataset)
-        idata = robust_mod.fit(draws=2000, random_seed=random_seed)
+        with loglevel("ERROR", module="pymc"):
+            idata = robust_mod.fit(draws=2000, random_seed=random_seed, progressbar=False)
         calc_dmeans(idata)
         ci95 = hdi_from_idata(idata, var_name="dmeans", hdi_prob=0.95)
         decision = get_ci_decision(0, ci95)
         ci90 = hdi_from_idata(idata, var_name="dmeans", hdi_prob=0.9)
+        results["robust_bayes"] = {"decision": decision, "ci90": ci90}
 
-    elif model == "bf":
+    if "bf" in models:
         ttres = ttest_ind(treated, controls, equal_var=True)
         n, m = len(treated), len(controls)
         bfA0 = pg.bayesfactor_ttest(ttres.statistic, nx=n, ny=m, r=0.707)
         decision = get_bf_decision(bfA0)
         ci90 = None
+        results["bf"] = {"decision": decision, "ci90": ci90}
 
-    return decision, ci90
+    return results
 
+
+
+def calc_dmeans_perf_metrics(
+        ns=[20,30,50,100],
+        Deltas=[0, 0.2, 0.5, 0.8, 1.3],
+        outliers_options=["no", "few", "lots"],
+        reps=40, # CHANGE ME
+        random_seed_start=45):
+    """
+    Calculate the performance of the different statistical analysis procedures
+    for each dataset specification, based on `reps` repeated samples.
+    We'll count the following outcomes:    
+    - `count_reject`: number of times H_0: Delta=0 is rejected
+    - `count_fail_to_reject`: number of times we fail to reject H_0: Delta=0
+    - `count_captured`: when the interval estimate (ci or hdi) contain the true `Delta`
+    - `avg_width`: average width of the interval estimate (ci or hdi) over all `reps`
+    """
+    dataset_specs = gen_dmeans_datasets(ns=ns,
+                                        Deltas=Deltas,
+                                        outliers_options=outliers_options,
+                                        random_seed_start=random_seed_start)
+    dataset_columns = [
+        "n",
+        "Delta",
+        "outliers",
+        "seed",
+    ]
+
+    metrics_columns = [
+        "count_reject",
+        "count_fail_to_reject",
+        "count_captured",
+        "avg_width",
+    ]
+
+    # Check if cached simulation data exists
+    filename = "dmeans_perf_metrics" \
+                + "__ns_" + "_".join(map(str,ns)) \
+                + "__Deltas_" + "_".join(map(str,Deltas)) \
+                + "__outs_" + "_".join(map(str,outliers_options)) \
+                + "__reps_" + str(reps) + ".csv"
+    filepath = os.path.join("simdata", filename)
+    if os.path.exists(filepath):
+        print("loaded cached results from ", filepath)
+        results = pd.read_csv(filepath, index_col=[0,1])
+        return results
+    
+    # Prepare results table
+    results_columns = dataset_columns + metrics_columns
+    specs_idx = range(len(dataset_specs))
+    models_idx = ["perm", "welch", "norm_bayes", "robust_bayes", "bf"]
+    results_index = pd.MultiIndex.from_product((specs_idx, models_idx), names=["spec", "model"])
+    results = pd.DataFrame(index=results_index, columns=results_columns)
 
     
+    for row_idx, spec in enumerate(dataset_specs):
+        print(spec)
+
+        # Get rows that correspond to this `spec` (for all models)
+        spec_results = results.loc[(row_idx,),:]
+
+        # Save dataset spec
+        spec_results.loc[:,"n"] = spec["n"]
+        spec_results.loc[:,"Delta"] = spec["Delta"]
+        spec_results.loc[:,"outliers"] = spec["outliers"]
+        spec_results.loc[:,"seed"] = spec["random_seed"]
+        # Initialize counts to zero
+        spec_results.loc[:,"count_reject"] = 0
+        spec_results.loc[:,"count_fail_to_reject"] = 0
+        spec_results.loc[:,"count_captured"] = 0
+        spec_results.loc["bf","count_captured"] = pd.NA
+        spec_results.loc["bf","avg_width"] = pd.NA
+
+        # Interpret the sparsity specification
+        spec["outliers"] in ["no", "few", "lots"]
+        if spec["outliers"] == "no":
+            prop_outliers = 0
+        elif spec["outliers"] == "few":
+            prop_outliers = 0.02
+        elif spec["outliers"] == "lots":
+            prop_outliers = 0.05
+
+        # Repeat for `rep` datasets
+        ci_widths = defaultdict(list)
+        for rep in range(reps):
+            if rep % 10 == 0:
+                print("Running", spec, "rep", rep) 
+            rep_random_seed = spec["random_seed"] * 10000 + rep
+            dataset = gen_dmeans_dataset(n=spec["n"],
+                                         Delta=spec["Delta"],
+                                         prop_outliers=prop_outliers,
+                                         random_seed=rep_random_seed)
+            # Run all the tests
+            rep_results = fit_dmeans_models(dataset, random_seed=rep_random_seed)
+            for model, model_results in rep_results.items():
+                # Hypothesis test metrics
+                decision = model_results["decision"]
+                if decision == "reject H0":
+                    spec_results.loc[model, "count_reject"] += 1
+                else:
+                    spec_results.loc[model, "count_fail_to_reject"] += 1
+                if model == "bf":
+                    continue
+                # Confidence interval metrics
+                ci90 = model_results["ci90"]
+                if is_inside(spec["Delta"], ci90):
+                    spec_results.loc[model, "count_captured"] += 1
+                ci90_width = ci90[1] - ci90[0]
+                ci_widths[model].append(ci90_width)
+
+        for model, widths in ci_widths.items():
+            spec_results.loc[model,"avg_width"] = np.mean(widths)
+
+    # Cache results to avoid need to recompute
+    results.to_csv(filepath)
+    print("Saved file to " + filepath)
+    return results
 
 
 
+# Success metrics
+################################################################################
 
-"""
-## Success metrics
-Since we're analyzing synthetic datasets,
-we know what the correct decision is for the result of the hypothesis test.
-The correction decision when Delta = 0 is to fail to reject $H_0$,
-and reject $H_0$ when Delta neq 0.
-We'll count the following errors:
+def gen_perf_table_typeI():
+    """
+    Analysis of false positive results.
+    For all the datasets generated with Delta=0 (the null hypothesis is true)
+    but it is possible the hypothesis test procedure will reject $H_0$.
+    The correction decision when Delta = 0 is to fail to reject $H_0$,
+    and reject $H_0$ when Delta neq 0.
 
-- False positives: a dataset generated from $Delta=0$, for which the analysis results rejects $H_0$.
-- False negatives: a dataset with $Delta neq 0$ for which the analysis fails to reject $H_0$.
-- Incorrect interval estimates: when the interval estimate (ci or hdi)
-  doesn't contain the true value $Delta$ used to generate the synthetic dataset.
+    """
+    pass
 
-"""
+def gen_perf_table_typeII():
+    """
+    False negatives: a dataset with $Delta neq 0$ for which the analysis fails to reject $H_0$.
+    """
+    pass
+
+
+def gen_perf_table_coverage():
+    """
+    False positives: a dataset generated from $Delta=0$, for which the analysis results rejects $H_0$.
+    """
+    pass
+

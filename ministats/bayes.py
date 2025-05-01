@@ -14,7 +14,7 @@ from scipy.stats import gaussian_kde
 logging.getLogger("pytensor.tensor.blas").setLevel(logging.ERROR)
 
 
-
+    
 # ESTIMATORS
 ################################################################################
 
@@ -329,7 +329,7 @@ def best_dmeans_model(xsample, ysample, nuprior="exp"):
     paper by John K. Kruschke.
     The function supports three different choices for the priors on `nu`:
       - `shiftedexp` = Expon(lam=1/29) + 1: the prior from the original paper
-      - `exp` = Expon(lam=1/29): a simplified version without the +1 shift
+      - `exp` = Expon(lam=1/30): a simplified version without the +1 shift
       - `gamma` = Gamma(alpha=2.0, beta=0.1): the Bambi default prior for `nu`s
     Returns the Bambi model, which you can then analyze and fit.
     """

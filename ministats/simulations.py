@@ -97,4 +97,3 @@ def simulate_ci_props(pops, methods=["a", "percentile", "bca"], ns=[20,40],
     results.to_csv(filepath)
     print("Saved file to " + filepath)
     return results
-
