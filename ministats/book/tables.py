@@ -1,5 +1,6 @@
 from collections import defaultdict
 import os
+import time
 
 import arviz as az
 from arviz.plots.plot_utils import calculate_point_estimate as calc_point_est
@@ -370,6 +371,8 @@ def calc_dmeans_perf_metrics(
                                         Deltas=Deltas,
                                         outliers_options=outliers_options,
                                         random_seed_start=random_seed_start)
+    print("Simulating a total of", len(dataset_specs), "dataset specs")
+
     dataset_columns = [
         "n",
         "Delta",
@@ -430,8 +433,10 @@ def calc_dmeans_perf_metrics(
         elif spec["outliers"] == "lots":
             prop_outliers = 0.05
 
+
         # Repeat for `rep` datasets
         ci_widths = defaultdict(list)
+        t_before_reps = time.time()
         for rep in range(reps):
             if rep % 10 == 0:
                 print("Running", spec, "rep", rep) 
@@ -458,6 +463,10 @@ def calc_dmeans_perf_metrics(
                 ci90_width = ci90[1] - ci90[0]
                 ci_widths[model].append(ci90_width)
 
+        t_after_reps = time.time()
+        reps_time = t_after_reps - t_before_reps
+        print(reps, "reps took", reps_time, "to run...")
+
         for model, widths in ci_widths.items():
             spec_results.loc[model,"avg_width"] = np.mean(widths)
 
@@ -479,31 +488,108 @@ def get_perf_table_typeI(results):
     which is a Type I error (false postivie).
     """
     results = results.copy()
+
+    # Infer the number of `reps` that were simulated for each spec
     first_result = results.iloc[0,:]
     reps = first_result["count_reject"] + first_result["count_fail_to_reject"]
+
     # Calculate the false positive rate for each (spec,model) combination
     results.loc[:,"false_positives"] = results.loc[:,"count_reject"] / reps
+
     # Select only relevant rows and columns
-    subset_rows = results["Delta"] == 0                 # no effect size
+    subset_rows = results["Delta"] == 0  # when H0 is true
     subset_cols = ["n", "outliers", "false_positives"]
     subset = results.loc[subset_rows, subset_cols]
-    # Drop the outer index level 'spec' by resetting index
-    subset_nospec = subset.reset_index(level='spec', drop=True)
-    # Define custom category order
-    subset_nospec['outliers'] = pd.Categorical(subset_nospec['outliers'],
-                                               categories=['no', 'few', 'lots'],
-                                               ordered=True)
-    # Pivot the table: rows are (outliers, n), columns are model names, values are false_positives
-    subset_pivot = subset_nospec.pivot_table(index=['outliers', 'n'],
-                                             columns='model',
-                                             values='false_positives',
-                                             observed=True)
-    # Sort the index
-    tableA = subset_pivot.sort_index()
-
+    
+    # Reshape the data to prepare the Type I errors table
+    tableA = subset.reset_index(level='spec', drop=True) \
+                   .assign(outliers=pd.Categorical(subset['outliers'],
+                                                   categories=['no', 'few', 'lots'],
+                                                   ordered=True)) \
+                   .pivot_table(index=['outliers', 'n'],
+                                columns='model',
+                                values='false_positives',
+                                observed=True) \
+                   .set_axis(labels=["perm", "welch", "norm_bayes", "robust_bayes", "bf"],
+                             axis="columns") \
+                   .sort_index()
     return tableA
 
 
+def get_perf_table_typeII(results):
+    """
+    Analysis of false negatives for all models.
+    For datasets Delta ≠ 0, correction decision is to reject H0.
+    If we fail to reject H0 this is a Type OI error (false negative).
+    """
+    results = results.copy()
+
+    # Infer the number of `reps` that were simulated for each spec
+    first_result = results.iloc[0,:]
+    reps = first_result["count_reject"] + first_result["count_fail_to_reject"]
+
+    # Calculate the false negative rate for each (spec,model) combination
+    results.loc[:,"false_negatives"] = results.loc[:,"count_fail_to_reject"] / reps
+
+    # Select only relevant rows and columns
+    subset_rows = results["Delta"] != 0
+    subset_cols = ["n", "outliers", "Delta", "false_negatives"]
+    subset = results.loc[subset_rows, subset_cols]
+    
+    # Reshape the data to prepare the Type II errors table
+    tableB = subset.reset_index(level='spec', drop=True) \
+                   .assign(outliers=pd.Categorical(subset['outliers'],
+                                                   categories=['no', 'few', 'lots'],
+                                                   ordered=True)) \
+                   .pivot_table(index=['outliers', 'Delta', 'n'],
+                                columns='model',
+                                values='false_negatives',
+                                observed=True) \
+                   .set_axis(labels=["perm", "welch", "norm_bayes", "robust_bayes", "bf"],
+                             axis="columns") \
+                   .sort_index()
+    return tableB
+
+
+def get_perf_table_coverage(results):
+    """
+    Calculates the summary of the coverage probability
+    and width of the interval estimates from different models.
+    """
+    results = results.copy()
+
+    # Infer the number of `reps` that were simulated for each spec
+    first_result = results.iloc[0,:]
+    reps = first_result["count_reject"] + first_result["count_fail_to_reject"]
+
+    # Calculate the coverage proportion for each (spec,model) combination
+    results.loc[:,"coverage"] = results.loc[:,"count_captured"] / reps
+
+    # Select only relevant rows and columns
+    subset_rows = results["Delta"] != 0
+    subset_cols = ["n", "outliers", "Delta", "coverage", "avg_width"]
+    subset = results.loc[subset_rows, subset_cols]
+    # Drop the rows for the `bf` model that don't have interval estiamtes
+    bf_rows_to_drop = subset.loc[pd.IndexSlice[:,'bf'],:].index
+    subset = subset.drop(index=bf_rows_to_drop)
+
+    # Reshape the data to prepare the interval estimates table
+    tableC = subset.reset_index(level='spec', drop=True) \
+                   .assign(outliers=pd.Categorical(subset['outliers'],
+                                                   categories=['no', 'few', 'lots'],
+                                                   ordered=True)) \
+                   .pivot_table(index=['outliers', 'n', 'Delta'],
+                                columns='model',
+                                values=['coverage', "avg_width"],
+                                observed=True)
+    tableC.columns = tableC.columns.swaplevel(0, 1)
+
+    # Enforce sort order on the model level of the columns index
+    model_order = ["perm", "welch", "norm_bayes", "robust_bayes"]
+    tableC.columns = pd.MultiIndex.from_tuples(
+        sorted(tableC.columns, key=lambda x: model_order.index(x[0]))
+    )
+    return tableC
 
 
 

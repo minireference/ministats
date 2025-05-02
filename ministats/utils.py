@@ -5,6 +5,8 @@ import os
 import matplotlib.pyplot as plt
 
 
+
+
 @contextmanager
 def loglevel(level, module=None):
     """
@@ -12,8 +14,12 @@ def loglevel(level, module=None):
     Useful for silencing the output of Bambi model fit method.
     """
     if isinstance(level, str):
+        LEVEL_NAMES_MAPPING = {
+            'CRITICAL': 50, 'FATAL': 50, 'ERROR': 40, 'WARN': 30,
+            'WARNING': 30, 'INFO': 20, 'DEBUG': 10, 'NOTSET': 0
+        }
         level = level.upper()
-        level = logging.getLevelNamesMapping()[level]
+        level = LEVEL_NAMES_MAPPING[level]
     logger = logging.getLogger(module)
     current_level = logger.getEffectiveLevel()
     logger.setLevel(level)
