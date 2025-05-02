@@ -376,7 +376,6 @@ def calc_dmeans_perf_metrics(
         "outliers",
         "seed",
     ]
-
     metrics_columns = [
         "count_reject",
         "count_fail_to_reject",
@@ -410,12 +409,12 @@ def calc_dmeans_perf_metrics(
         # Get rows that correspond to this `spec` (for all models)
         spec_results = results.loc[(row_idx,),:]
 
-        # Save dataset spec
+        # Save dataset spec columns
         spec_results.loc[:,"n"] = spec["n"]
         spec_results.loc[:,"Delta"] = spec["Delta"]
         spec_results.loc[:,"outliers"] = spec["outliers"]
         spec_results.loc[:,"seed"] = spec["random_seed"]
-        # Initialize counts to zero
+        # Initialize metrics columns
         spec_results.loc[:,"count_reject"] = 0
         spec_results.loc[:,"count_fail_to_reject"] = 0
         spec_results.loc[:,"count_captured"] = 0
@@ -469,30 +468,42 @@ def calc_dmeans_perf_metrics(
 
 
 
-# Success metrics
+# Tables with success metrics
 ################################################################################
 
-def gen_perf_table_typeI():
+def get_perf_table_typeI(results):
     """
-    Analysis of false positive results.
+    Analysis of false positive results for all models.
     For all the datasets generated with Delta=0 (the null hypothesis is true)
-    but it is possible the hypothesis test procedure will reject $H_0$.
-    The correction decision when Delta = 0 is to fail to reject $H_0$,
-    and reject $H_0$ when Delta neq 0.
+    but it is possible the hypothesis test procedure will reject H0,
+    which is a Type I error (false postivie).
+    """
+    results = results.copy()
+    first_result = results.iloc[0,:]
+    reps = first_result["count_reject"] + first_result["count_fail_to_reject"]
+    # Calculate the false positive rate for each (spec,model) combination
+    results.loc[:,"false_positives"] = results.loc[:,"count_reject"] / reps
+    # Select only relevant rows and columns
+    subset_rows = results["Delta"] == 0                 # no effect size
+    subset_cols = ["n", "outliers", "false_positives"]
+    subset = results.loc[subset_rows, subset_cols]
+    # Drop the outer index level 'spec' by resetting index
+    subset_nospec = subset.reset_index(level='spec', drop=True)
+    # Define custom category order
+    subset_nospec['outliers'] = pd.Categorical(subset_nospec['outliers'],
+                                               categories=['no', 'few', 'lots'],
+                                               ordered=True)
+    # Pivot the table: rows are (outliers, n), columns are model names, values are false_positives
+    subset_pivot = subset_nospec.pivot_table(index=['outliers', 'n'],
+                                             columns='model',
+                                             values='false_positives',
+                                             observed=True)
+    # Sort the index
+    tableA = subset_pivot.sort_index()
 
-    """
-    pass
-
-def gen_perf_table_typeII():
-    """
-    False negatives: a dataset with $Delta neq 0$ for which the analysis fails to reject $H_0$.
-    """
-    pass
+    return tableA
 
 
-def gen_perf_table_coverage():
-    """
-    False positives: a dataset generated from $Delta=0$, for which the analysis results rejects $H_0$.
-    """
-    pass
+
+
 
