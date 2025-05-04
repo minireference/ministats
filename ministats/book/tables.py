@@ -502,16 +502,15 @@ def get_perf_table_typeI(results):
     subset = results.loc[subset_rows, subset_cols]
     
     # Reshape the data to prepare the Type I errors table
-    tableA = subset.reset_index(level='spec', drop=True) \
-                   .assign(outliers=pd.Categorical(subset['outliers'],
-                                                   categories=['no', 'few', 'lots'],
+    tableA = subset.reset_index(level="spec", drop=True) \
+                   .assign(outliers=pd.Categorical(subset["outliers"],
+                                                   categories=["no", "few", "lots"],
                                                    ordered=True)) \
-                   .pivot_table(index=['outliers', 'n'],
-                                columns='model',
-                                values='false_positives',
+                   .pivot_table(index=["outliers", "n"],
+                                columns="model",
+                                values="false_positives",
                                 observed=True) \
-                   .set_axis(labels=["perm", "welch", "norm_bayes", "robust_bayes", "bf"],
-                             axis="columns") \
+                   .reindex(columns=["perm", "welch", "norm_bayes", "robust_bayes", "bf"]) \
                    .sort_index()
     return tableA
 
@@ -537,16 +536,15 @@ def get_perf_table_typeII(results):
     subset = results.loc[subset_rows, subset_cols]
     
     # Reshape the data to prepare the Type II errors table
-    tableB = subset.reset_index(level='spec', drop=True) \
-                   .assign(outliers=pd.Categorical(subset['outliers'],
-                                                   categories=['no', 'few', 'lots'],
+    tableB = subset.reset_index(level="spec", drop=True) \
+                   .assign(outliers=pd.Categorical(subset["outliers"],
+                                                   categories=["no", "few", "lots"],
                                                    ordered=True)) \
-                   .pivot_table(index=['outliers', 'Delta', 'n'],
-                                columns='model',
-                                values='false_negatives',
+                   .pivot_table(index=["outliers", "Delta", "n"],
+                                columns="model",
+                                values="false_negatives",
                                 observed=True) \
-                   .set_axis(labels=["perm", "welch", "norm_bayes", "robust_bayes", "bf"],
-                             axis="columns") \
+                   .reindex(columns=["perm", "welch", "norm_bayes", "robust_bayes", "bf"]) \
                    .sort_index()
     return tableB
 
@@ -570,25 +568,26 @@ def get_perf_table_coverage(results):
     subset_cols = ["n", "outliers", "Delta", "coverage", "avg_width"]
     subset = results.loc[subset_rows, subset_cols]
     # Drop the rows for the `bf` model that don't have interval estiamtes
-    bf_rows_to_drop = subset.loc[pd.IndexSlice[:,'bf'],:].index
+    bf_rows_to_drop = subset.loc[pd.IndexSlice[:,"bf"],:].index
     subset = subset.drop(index=bf_rows_to_drop)
 
     # Reshape the data to prepare the interval estimates table
-    tableC = subset.reset_index(level='spec', drop=True) \
-                   .assign(outliers=pd.Categorical(subset['outliers'],
-                                                   categories=['no', 'few', 'lots'],
+    tableC = subset.reset_index(level="spec", drop=True) \
+                   .assign(outliers=pd.Categorical(subset["outliers"],
+                                                   categories=["no", "few", "lots"],
                                                    ordered=True)) \
-                   .pivot_table(index=['outliers', 'n', 'Delta'],
-                                columns='model',
-                                values=['coverage', "avg_width"],
+                   .pivot_table(index=["outliers", "n", "Delta"],
+                                columns="model",
+                                values=["coverage", "avg_width"],
                                 observed=True)
     tableC.columns = tableC.columns.swaplevel(0, 1)
 
-    # Enforce sort order on the model level of the columns index
-    model_order = ["perm", "welch", "norm_bayes", "robust_bayes"]
-    tableC.columns = pd.MultiIndex.from_tuples(
-        sorted(tableC.columns, key=lambda x: model_order.index(x[0]))
-    )
+    # Set the desired sort order of the columns index
+    models = ["perm", "welch", "norm_bayes", "robust_bayes"]
+    metrics = ["coverage", "avg_width"]
+    new_cols = [(model, metric) for model in models for metric in metrics]
+    tableC = tableC.loc[:, new_cols]
+
     return tableC
 
 
