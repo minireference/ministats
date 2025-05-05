@@ -72,7 +72,7 @@ def ci_dmeans(xsample, ysample, alpha=0.1, method="a"):
     elif method == "b":      # bootstrap estimation
         xbars_boot = gen_boot_dist(xsample, np.mean)
         ybars_boot = gen_boot_dist(ysample, np.mean)
-        dmeans_boot = np.subtract(xbars_boot,ybars_boot)
+        dmeans_boot = np.subtract(xbars_boot, ybars_boot)
         return [np.quantile(dmeans_boot, alpha/2),
                 np.quantile(dmeans_boot, 1-alpha/2)]
 

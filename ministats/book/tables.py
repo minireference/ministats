@@ -515,11 +515,11 @@ def get_perf_table_typeI(results):
     return tableA
 
 
-def get_perf_table_typeII(results):
+def get_perf_table_power(results, show_all=True):
     """
-    Analysis of false negatives for all models.
+    Analysis of power (true positives) for all models.
     For datasets Delta ≠ 0, correction decision is to reject H0.
-    If we fail to reject H0 this is a Type OI error (false negative).
+    The `power` is the ability to the test to make the correct decision.
     """
     results = results.copy()
 
@@ -528,11 +528,21 @@ def get_perf_table_typeII(results):
     reps = first_result["count_reject"] + first_result["count_fail_to_reject"]
 
     # Calculate the false negative rate for each (spec,model) combination
-    results.loc[:,"false_negatives"] = results.loc[:,"count_fail_to_reject"] / reps
+    results.loc[:,"power"] = 1 - results.loc[:,"count_fail_to_reject"] / reps
 
     # Select only relevant rows and columns
-    subset_rows = results["Delta"] != 0
-    subset_cols = ["n", "outliers", "Delta", "false_negatives"]
+    cond1 = results["Delta"] != 0    # not part of the experiment
+    cond2 = results["Delta"] != 1.3  # near 100%
+    cond3 = results["Delta"] != 0.2  # near 0% power
+    cond4 = ~((results["Delta"] == 0.8) & (results["n"] == 100))  # near 100%
+    cond5 = ~((results["Delta"] == 0.5) & (results["n"] == 20))   # near 0%
+    if show_all:
+        # For dispaly in notebooks
+        subset_rows = cond1
+    else:
+        # For reduced display in print book
+        subset_rows = cond1 & cond2 & cond3 & cond4 & cond5
+    subset_cols = ["n", "outliers", "Delta", "power"]
     subset = results.loc[subset_rows, subset_cols]
     
     # Reshape the data to prepare the Type II errors table
@@ -542,7 +552,7 @@ def get_perf_table_typeII(results):
                                                    ordered=True)) \
                    .pivot_table(index=["outliers", "Delta", "n"],
                                 columns="model",
-                                values="false_negatives",
+                                values="power",
                                 observed=True) \
                    .reindex(columns=["perm", "welch", "norm_bayes", "robust_bayes", "bf"]) \
                    .sort_index()
@@ -579,7 +589,9 @@ def get_perf_table_coverage(results):
                    .pivot_table(index=["outliers", "n", "Delta"],
                                 columns="model",
                                 values=["coverage", "avg_width"],
-                                observed=True)
+                                observed=True) \
+                   .groupby(level=["outliers", "n"],
+                            observed=True).mean() 
     tableC.columns = tableC.columns.swaplevel(0, 1)
 
     # Set the desired sort order of the columns index
