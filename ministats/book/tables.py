@@ -11,7 +11,6 @@ import pingouin as pg
 from scipy.stats import norm
 from scipy.stats import ttest_ind
 
-
 from ..bayes import calc_dmeans_stats
 from ..bayes import hdi_from_idata
 from ..confidence_intervals import ci_dmeans
@@ -20,7 +19,7 @@ from ..hypothesis_tests import ttest_dmeans
 from ..utils import loglevel
 
 
-# SENSITIVITY ANALYSIS
+# BAYESIAN DMEANS SENSITIVITY ANALYSIS
 ################################################################################
 
 def fit_bayesian_model_iqs2(iqs2, new_priors, random_seed=42):
@@ -54,7 +53,7 @@ def sens_analysis_dmeans_iqs2(iqs2):
     Generate the table showing the results of the sensitivity analysis
     for Example 2 in Section 5.4.
     """
-
+    # Define the priors
     M_priors = {
          "orig": {
               "display": r"$\mathcal{N}(100,35)$",
@@ -89,23 +88,7 @@ def sens_analysis_dmeans_iqs2(iqs2):
             "bambi": bmb.Prior("Exponential", lam=1/30),
         },
     }
-
-    experiemnt_columns = [
-        "M_prior",
-        "logSigma_prior",
-        "Nu_prior",
-    ]
-
-    result_columns = [
-        "dmeans_mean",
-        "dmeans_95hdi",
-        "dsigmas_mode",
-        "dsigmas_95hdi",
-        "nu_mode",
-        "codhend_mode",
-    ]
-
-
+    
     experiments = [
         dict(name="orig", mean="orig",    sigma="orig", nu="orig",  seed=42),
         dict(name="orig", mean="wider",   sigma="orig", nu="orig",  seed=43),
@@ -115,16 +98,28 @@ def sens_analysis_dmeans_iqs2(iqs2):
     ]
 
     # Prepare results table
+    experiemnt_columns = [
+        "M_prior",
+        "logSigma_prior",
+        "Nu_prior",
+    ]
+    result_columns = [
+        "dmeans_mean",
+        "dmeans_95hdi",
+        "dsigmas_mode",
+        "dsigmas_95hdi",
+        "nu_mode",
+        "codhend_mode",
+    ]
     results_columns = experiemnt_columns + result_columns
     results_rows = range(len(experiments))
     results = pd.DataFrame(index=results_rows, columns=results_columns)
 
-
     for i, exp in enumerate(experiments):
-        print("fitting model", i, "...")
+        # print("fitting model", i, "...")
         priors = {}  # priors to be used for current run
 
-        # Set priors based on specificatino in `exp`
+        # Set priors based on specification in `exp`
         results.loc[i, "M_prior"] = M_priors[exp["mean"]]["display"]
         priors["group"] = M_priors[exp["mean"]]["bambi"]
         results.loc[i, "logSigma_prior"] = logSigma_priors[exp["sigma"]]["display"]
@@ -139,23 +134,23 @@ def sens_analysis_dmeans_iqs2(iqs2):
         # Calculate results
         post2 = idata2["posterior"]
         summary2 = az.summary(post2, kind="stats", hdi_prob=0.95)
-        ### Calculate dmeans_mean
+        ## Calculate dmeans_mean
         results.loc[i, "dmeans_mean"] = summary2.loc["dmeans", "mean"]
-        ### Calculate dmeans_95hdi
+        ## Calculate dmeans_95hdi
         dmeans_ci_low = summary2.loc["dmeans", "hdi_2.5%"]
         dmeans_ci_high = summary2.loc["dmeans","hdi_97.5%"]
         results.loc[i, "dmeans_95hdi"] = [dmeans_ci_low, dmeans_ci_high]
-        ### Calculate dsigmas_mode
+        ## Calculate dsigmas_mode
         dsigmas = post2["dsigmas"].values.flatten()
         results.loc[i, "dsigmas_mode"] = calc_point_est("mode", dsigmas).round(3)
-        ### Calculate dsigmas_95hdi
+        ## Calculate dsigmas_95hdi
         dsigmas_ci_low = summary2.loc["dsigmas", "hdi_2.5%"]
         dsigmas_ci_high = summary2.loc["dsigmas","hdi_97.5%"]
         results.loc[i, "dsigmas_95hdi"] = [dsigmas_ci_low, dsigmas_ci_high]
-        ### Calculate nu_mode
+        ## Calculate nu_mode
         nus = post2["nu"].values.flatten()
         results.loc[i, "nu_mode"] = calc_point_est("mode", nus).round(3)
-        ### Calculate codhend_mode
+        ## Calculate codhend_mode
         cohends = post2["dsigmas"].values.flatten()
         results.loc[i, "codhend_mode"] = calc_point_est("mode", cohends).round(3)
 
@@ -166,7 +161,7 @@ def sens_analysis_dmeans_iqs2(iqs2):
 
 
 
-# PERFORMANCE ANALYSIS
+# DMEANS PERFORMANCE ANALYSIS
 ################################################################################
 
 def gen_dmeans_dataset(n, Delta, prop_outliers=0, random_seed=42):
@@ -175,8 +170,8 @@ def gen_dmeans_dataset(n, Delta, prop_outliers=0, random_seed=42):
     The mean of the control group is `0`,
     the mean of the treatment group is `Delta`.
     We'll make a proportion `prop_outliers` of the values
-    in each group outliers, comeing from a populaiton
-    with much wider standdard deviaiton.
+    in each group outliers, coming from a population
+    with much wider standard deviation.
     """
     np.random.seed(random_seed)
     
@@ -256,12 +251,12 @@ def fit_dmeans_models(dataset, random_seed=42):
     Fit the following models for the difference of two means:
     - Permutation test from Section 3.5
     - Welch's two-sample $t$-test from Section 3.5
-    - Normal Bayesian model that uses normal as data model
-    - Robust Bayesian model that uses t distribution as data model
+    - Bayesian model that uses normal as data model
+    - Robust Bayesian model that uses t-distribution as data model
     - Bayes factor using JZS prior (using `pingouin` library)
     For each model, we run the hypothesis test to decide if the populations
     are the same or different based on the conventional cutoff level of 5%.
-    We also construct a 90% confidnece interval for the diff. between `Delta`.
+    We also construct a 90% interval estimates for the unknown `Delta`.
     """
     models = ["perm", "welch", "norm_bayes", "robust_bayes", "bf"]
 
@@ -356,7 +351,7 @@ def calc_dmeans_perf_metrics(
         ns=[20,30,50,100],
         Deltas=[0, 0.2, 0.5, 0.8, 1.3],
         outliers_options=["no", "few", "lots"],
-        reps=40, # CHANGE ME
+        reps=100,
         random_seed_start=45):
     """
     Calculate the performance of the different statistical analysis procedures
@@ -477,6 +472,7 @@ def calc_dmeans_perf_metrics(
 
 
 
+
 # Tables with success metrics
 ################################################################################
 
@@ -485,7 +481,7 @@ def get_perf_table_typeI(results):
     Analysis of false positive results for all models.
     For all the datasets generated with Delta=0 (the null hypothesis is true)
     but it is possible the hypothesis test procedure will reject H0,
-    which is a Type I error (false postivie).
+    which is a Type I error (false positive).
     """
     results = results.copy()
 
@@ -527,25 +523,23 @@ def get_perf_table_power(results, show_all=True):
     first_result = results.iloc[0,:]
     reps = first_result["count_reject"] + first_result["count_fail_to_reject"]
 
-    # Calculate the false negative rate for each (spec,model) combination
+    # Calculate the power for each (spec,model) combination
     results.loc[:,"power"] = 1 - results.loc[:,"count_fail_to_reject"] / reps
 
     # Select only relevant rows and columns
     cond1 = results["Delta"] != 0    # not part of the experiment
-    cond2 = results["Delta"] != 1.3  # near 100%
-    cond3 = results["Delta"] != 0.2  # near 0% power
+    cond2 = results["Delta"] != 0.2  # near 0% power
+    cond3 = results["Delta"] != 1.3  # near 100% power
     cond4 = ~((results["Delta"] == 0.8) & (results["n"] == 100))  # near 100%
     cond5 = ~((results["Delta"] == 0.5) & (results["n"] == 20))   # near 0%
-    if show_all:
-        # For dispaly in notebooks
+    if show_all:  # For display in notebooks
         subset_rows = cond1
-    else:
-        # For reduced display in print book
+    else:         # For reduced display in print book
         subset_rows = cond1 & cond2 & cond3 & cond4 & cond5
     subset_cols = ["n", "outliers", "Delta", "power"]
     subset = results.loc[subset_rows, subset_cols]
     
-    # Reshape the data to prepare the Type II errors table
+    # Reshape the data to prepare the power table
     tableB = subset.reset_index(level="spec", drop=True) \
                    .assign(outliers=pd.Categorical(subset["outliers"],
                                                    categories=["no", "few", "lots"],
@@ -577,7 +571,7 @@ def get_perf_table_coverage(results):
     subset_rows = results["Delta"] != 0
     subset_cols = ["n", "outliers", "Delta", "coverage", "avg_width"]
     subset = results.loc[subset_rows, subset_cols]
-    # Drop the rows for the `bf` model that don't have interval estiamtes
+    # Drop the `bf` model rows because they don't have interval estimates
     bf_rows_to_drop = subset.loc[pd.IndexSlice[:,"bf"],:].index
     subset = subset.drop(index=bf_rows_to_drop)
 
@@ -599,8 +593,5 @@ def get_perf_table_coverage(results):
     metrics = ["coverage", "avg_width"]
     new_cols = [(model, metric) for model in models for metric in metrics]
     tableC = tableC.loc[:, new_cols]
-
     return tableC
-
-
 
