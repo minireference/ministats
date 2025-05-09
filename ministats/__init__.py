@@ -2,7 +2,7 @@
 
 __author__ = """Ivan Savov"""
 __email__ = 'ivan@minireference.com'
-__version__ = '0.3.17'
+__version__ = '0.3.18'
 
 
 from .bayes import (
