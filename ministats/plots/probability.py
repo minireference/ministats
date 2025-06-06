@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from ..utils import savefigure
 
 
 # Discrete random variables
@@ -158,9 +159,6 @@ def qq_plot(data, dist, ax=None, xlims=None, filename=None):
     if xlims:
         ax.set_xlim(xlims)
     if filename:
-        basename = filename.replace('.pdf','').replace('.png','')
-        fig.tight_layout()
-        fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-        fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
+        savefigure(ax, filename)
 
     return ax

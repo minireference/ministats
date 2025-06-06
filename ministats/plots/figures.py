@@ -1,8 +1,8 @@
+import os
 
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import pandas as pd
 from scipy.integrate import quad
 from scipy.stats import beta
@@ -13,6 +13,7 @@ from scipy.stats import hypergeom  # special handling M=a+b, n=a, N=n
 from scipy.stats import expon      # hide loc=0 parameter
 from scipy.stats import gamma      # hide loc=0 parameter
 from scipy.stats import norm
+from scipy.stats import uniform    # show alpha and beta; not loc and scale
 import seaborn as sns
 import statsmodels.formula.api as smf
 
@@ -24,7 +25,6 @@ blue, orange, red, purple = snspal[0], snspal[1], snspal[3], snspal[4]
 from ..bayes import hdi_from_grid
 from .probability import plot_pdf
 from ..sampling import gen_sampling_dist
-from ..utils import ensure_containing_dir_exists
 from ..utils import default_labeler
 from ..utils import savefigure
 
@@ -102,12 +102,7 @@ def generate_pmf_panel(fname, xs, model, params_matrix,
                     size=fontsize)
 
     # Save as PDF and PNG
-    ensure_containing_dir_exists(fname)
-    basename = fname.replace('.pdf','').replace('.png','')
-    fig.tight_layout()
-    fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-    fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
-    
+    savefigure(fig, fname)
     return fig
 
 
@@ -120,7 +115,7 @@ def generate_pmf_panel(fname, xs, model, params_matrix,
 def calc_prob_and_plot(rv, a, b, xlims=None, ax=None, title=None):
     """
     Calculate the probability random variable `rv` falls between a and b,
-    and plot the area-under-the-curve visualization ofr this calculation.
+    and plot the area-under-the-curve visualization of this calculation.
     """
 
     # 1. calculate Pr(a<X<b) == integral of rv.pdf between x=a and x=b
@@ -200,9 +195,9 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
         title = "Probability distributions of the random variable " \
             + "$" + rv_name + "$" + " ~ " \
             + rv.dist.name + str(rv.args).replace(" ", "")
-        fig.suptitle(title)
+        fig.suptitle(title, y=1.01)
     if title:
-        fig.suptitle(title)
+        fig.suptitle(title, y=1.01)
 
     # 1. plot the probability density function (pdf)
     if xlims:
@@ -234,6 +229,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
         ax1.text(b, 0, "$b$", horizontalalignment="center", verticalalignment="top")
         ax1.text(b, rv.cdf(b), "$(b, F_{" + rv_name + "}(b))$",
                  horizontalalignment="right", verticalalignment="bottom")
+        ax1.plot([b], [rv.cdf(b)], ".C0", markersize=7)
 
     # return figure and axes
     return fig, axs
@@ -263,7 +259,7 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
 
     # Generate the MxN panel of subplots
     fig, axarr = plt.subplots(M, N, sharey=True)
-    # We neeed to ensure `axarr` is an MxN matrix even if M or N are 1
+    # We need to ensure `axarr` is an MxN matrix even if M or N are 1
     if M == 1 and N == 1:
         ax = axarr
         axarr = np.ndarray((1,1), object)
@@ -280,12 +276,15 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
             fXs = fXs_matrix[i][j]
             params = params_matrix[i][j]
             if model == expon:
-                display_params = {"scale":params["scale"]}
+                display_params = {"scale": params["scale"]}
             elif model == gamma:
                 lam = 1 / params["scale"]
                 if lam >= 1:
                     lam = int(lam)
                 display_params = {"a": params["a"], "lam":lam}
+            elif model == uniform:
+                beta = params["loc"] + params["scale"]
+                display_params = {"alpha": params["loc"], "beta": beta}
             else:
                 display_params = params
             label = labeler(display_params, params_to_latex)
@@ -300,11 +299,7 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
                     size=fontsize)
 
     # Save as PDF and PNG
-    ensure_containing_dir_exists(fname)
-    basename = fname.replace('.pdf','').replace('.png','')
-    fig.tight_layout()
-    fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-    fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
+    savefigure(fig, fname)
 
     return fig
 
@@ -362,10 +357,7 @@ def plot_samples(samples_df, ax=None, xlims=None, filename=None,
     if xlims:
         ax.set_xlim(xlims)
     if filename:
-        basename = filename.replace('.pdf','').replace('.png','')
-        fig.tight_layout()
-        fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-        fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
+        savefigure(fig, filename)
 
     return ax
 
@@ -403,11 +395,9 @@ def plot_sampling_dist(stats, label=None, xlims=None, ax=None,
     if xlims:
         ax.set_xlim(xlims)
     if filename:
-        basename = filename.replace('.pdf','').replace('.png','')
-        fig.tight_layout()
-        fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-        fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
+        savefigure(fig, filename)
 
+    return ax
 
         
 
@@ -428,11 +418,7 @@ def plot_samples_panel(rv, xlims, N=10, ns=[10,30,100], filename=None):
         ax.set_title(f"Samples of size $n={n}$")
 
     if filename:
-        basename = filename.replace('.pdf','').replace('.png','')
-        fig.tight_layout()
-        fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-        fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
-
+        savefigure(fig, filename)
 
 
 def plot_sampling_dists_panel(rv, xlims, N=1000, ns=[10,30,100], binwidth=None, filename=None):
@@ -457,10 +443,7 @@ def plot_sampling_dists_panel(rv, xlims, N=1000, ns=[10,30,100], binwidth=None, 
         xbarss.append(xbars)
 
     if filename:
-        basename = filename.replace('.pdf','').replace('.png','')
-        fig.tight_layout()
-        fig.savefig(basename + '.pdf', dpi=300, bbox_inches="tight", pad_inches=0.02)
-        fig.savefig(basename + '.png', dpi=300, bbox_inches="tight", pad_inches=0.02)
+        savefigure(fig, filename)
     
     return xbarss
 
@@ -849,7 +832,7 @@ def prior_times_likelihood_eq_posterior_grid(heads=4, n=5, ngrid=26, figsize=(5,
 
 def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(6,2.5), destdir=None):
     """
-    Focus on the posterior with addotations for point and interval estimates.
+    Focus on the posterior with annotations for point and interval estimates.
     """
     eps = 0.001
     ps = np.linspace(0-eps, 1.0+eps, ngrid)
@@ -872,8 +855,7 @@ def posterior_visualization(heads=4, n=5, ngrid=1000, figsize=(6,2.5), destdir=N
     hdi90 = hdi_from_grid(ps, posterior, hdi_prob=0.9)
 
     with plt.rc_context({"figure.figsize":figsize}):
-
-        # plot the posteior
+        # plot the posterior
         porteriord = posterior / (ps[1] - ps[0])
         ax = sns.lineplot(x=ps, y=porteriord, color="C0", label="posterior")
         ax.set_ylabel("$f_{\\Theta|\\mathbf{x}}$")
