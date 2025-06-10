@@ -127,8 +127,7 @@ def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
 # The function qq_plot tries to imitate the behaviour of the function `qqplot`
 # defined in `statsmodels.graphics.api`. Usage: `qqplot(data, dist=norm(0,1), line='q')`. See:
 # https://github.com/statsmodels/statsmodels/blob/main/statsmodels/graphics/gofplots.py#L912-L919
-#
-# TODO: figure out how to plot all of data correctly: currently missing first and last data point
+
 
 def qq_plot(data, dist, ax=None, xlims=None, filename=None):
     # Setup figure and axes
@@ -138,19 +137,22 @@ def qq_plot(data, dist, ax=None, xlims=None, filename=None):
         fig = ax.figure
 
     # Add the Q-Q scatter plot
-    qs = np.linspace(0, 1, len(data)+1)
+    n = len(data)
+    qs = np.linspace(1/(n+1), n/(n+1), n)
     xs = dist.ppf(qs)
-    ys = np.quantile(data, qs)
-    sns.scatterplot(x=xs, y=ys, ax=ax, alpha=0.2)
+    sorted_data = np.sort(data)
+    ys = sorted_data
+    # ALT. ys = np.quantile(data, qs, method="inverted_cdf")
+    sns.scatterplot(x=xs, y=ys, ax=ax, alpha=0.7)
 
-    # Compute the parameters m and b for the diagonal
+    # Compute the parameters m and b for the diagonal line
     xq25, xq75 = dist.ppf([0.25, 0.75])
-    yq25, yq75 = np.quantile(data, [0.25,0.75])
-    m = (yq75-yq25)/(xq75-xq25)
+    yq25, yq75 = np.quantile(data, [0.25, 0.75])
+    m = (yq75 - yq25) / (xq75 - xq25)
     b = yq25 - m * xq25
     # add the line  y = m*x+b  to the plot
-    linexs = np.linspace(min(xs[1:]),max(xs[:-1]))
-    lineys = m*linexs + b
+    linexs = np.linspace(min(xs), max(xs))
+    lineys = m * linexs + b
     sns.lineplot(x=linexs, y=lineys, ax=ax, color="r")
 
     # Handle keyword arguments

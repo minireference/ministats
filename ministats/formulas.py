@@ -46,3 +46,26 @@ def calcdf(stdX, n, stdY, m):
     df = (vX + vY)**2 / (vX**2/(n-1) + vY**2/(m-1))
     return df
 
+
+
+# KOLMOGOROV-SMIRNOV DISTANCE
+################################################################################
+
+def ks_distance(sample, rv):
+    """
+    Compute the Kolmogorov-Smirnov distance between an data in `sample` and 
+    and the CDF function of the random variable `rv`.
+    """
+    n = len(sample)
+    sample = np.sort(sample)
+
+    # Empirical CDF values: i/n for the right-limit, (i-1)/n for left-limit
+    ecdf_vals = np.arange(1, n+1) / n
+    cdf_vals = rv.cdf(sample)
+
+    # Compute KS distances
+    ks_dist_plus = np.max(ecdf_vals - cdf_vals)
+    ks_dist_minus = np.max(cdf_vals - (np.arange(0, n) / n))
+    max_ks_dist = max(ks_dist_plus, ks_dist_minus)
+
+    return max_ks_dist
