@@ -46,7 +46,7 @@ def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label
     return ax
 
 
-def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label=None):
+def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwargs):
     """
     Plot the CDF of the random variable `rv` (discrete or continuous) over the `xlims`.
     """
@@ -65,15 +65,13 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label
 
     # Compute the CDF and plot it
     FXs = rv.cdf(xs)
-    sns.lineplot(x=xs, y=FXs, ax=ax)
+    sns.lineplot(x=xs, y=FXs, ax=ax, **kwargs)
 
     # Set plot attributes
     ax.set_xlabel(rv_name.lower())
     ax.set_ylabel(f"$F_{{{rv_name}}}$")
     if ylims:
         ax.set_ylim(*ylims)
-    if label:
-        ax.legend()
     if title and title.lower() == "auto":
         title = "Cumulative distribution function of the random variable " + rv.dist.name + str(rv.args)
     if title:
