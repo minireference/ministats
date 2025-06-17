@@ -124,12 +124,114 @@ def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
 
 # Diagnostic plots (used in Section 2.7 Random variable generation)
 ################################################################################
-# The function qq_plot tries to imitate the behaviour of the function `qqplot`
-# defined in `statsmodels.graphics.api`. Usage: `qqplot(data, dist=norm(0,1), line='q')`. See:
-# https://github.com/statsmodels/statsmodels/blob/main/statsmodels/graphics/gofplots.py#L912-L919
 
 
-def qq_plot(data, dist, ax=None, xlims=None, filename=None):
+def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, label=None):
+    """
+    Plot the empirical pmf of the observations in  `data`.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(5,1.2))
+    else:
+        fig = ax.figure
+
+    # Compute limits of plot
+    if xlims:
+        xmin, xmax = xlims
+    else:
+        extrax = 0.3 * max(data)  # extend further to the right
+        xmin = int(min(data))
+        xmax = int(max(data) + extrax)
+    # xs = np.arange(xmin, xmax)
+
+    # Compute the probability mass function and plot it
+    data = np.array(data)
+    n = len(data)
+    xs, counts = np.unique(data, return_counts=True)
+    fxs = counts / n
+
+    label = f"epmf({name})"
+    ax.stem(xs, fxs, basefmt=" ", label=label)
+    ax.set_xticks(range(xmin,xmax))
+    # ax.set_ylim([-0.01,0.22])
+    # ax.set_yticks([0, 0.1, 0.2])
+    ax.set_xlabel("$x$")
+    ax.set_ylabel(f"$f_{{\\text{{{name}}}}}$")
+    # ax.set_xticks(xs)
+    # ax.set_xlabel(rv_name.lower())
+    # ax.set_ylabel(f"$f_{{{rv_name}}}$")
+    if ylims:
+        ax.set_ylim(*ylims)
+    if label:
+        ax.legend()
+
+    if title and title.lower() == "auto":
+        title = "Empirical probability mass function of the data " + name
+    if title:
+        ax.set_title(title, y=0, pad=-30)
+
+    # return the axes
+    return ax
+
+
+def plot_ecdf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, label=None):
+    """
+    Plot the empirical CDF of the observations in  `data`.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(5,2))
+    else:
+        fig = ax.figure
+
+    # Compute limits of plot
+    if xlims:
+        xmin, xmax = xlims
+    else:
+        extrax = 0.3 * max(data)  # extend further to the right
+        xmin = int(min(data))
+        xmax = int(max(data) + extrax)
+    
+
+    def ecdf(data, b):
+        sorted_data = np.sort(data)
+        count = sum(sorted_data <= b)  # num. of obs. <= b
+        return count / len(data)       # proportion of total
+
+    # Compute the probability mass function and plot it
+    data = np.array(data)
+    bs = np.linspace(0, xmax, 1000)
+    Fxs = [ecdf(data,b) for b in bs]
+    # label = f"eCDF({name})"
+    ax = sns.lineplot(x=bs, y=Fxs, drawstyle='steps-post')
+    ax.set_xlabel("$b$")
+    ax.set_ylabel(f"$F_{{\\text{{{name}}}}}$")
+    ax.set_xlim([0, xmax])
+    ax.set_xticks(range(0,xmax))
+    if ylims:
+        ax.set_ylim(*ylims)
+    if label:
+        ax.legend()
+
+    if title and title.lower() == "auto":
+        title = "Empirical cumulative distribution function of the data " + name
+    if title:
+        ax.set_title(title, y=0, pad=-30)
+
+    # return the axes
+    return ax
+
+
+
+
+
+def qq_plot(data, dist, ax=None, xlims=None, filename=None, **kwargs):
+    """
+    This function qq_plot tries to imitate the behaviour of the function `qqplot`
+    defined in `statsmodels.graphics.api`. Usage: `qqplot(data, dist=norm(0,1), line='q')`. See:
+    https://github.com/statsmodels/statsmodels/blob/main/statsmodels/graphics/gofplots.py#L912-L919
+    """
     # Setup figure and axes
     if ax is None:
         fig, ax = plt.subplots()
@@ -143,7 +245,7 @@ def qq_plot(data, dist, ax=None, xlims=None, filename=None):
     sorted_data = np.sort(data)
     ys = sorted_data
     # ALT. ys = np.quantile(data, qs, method="inverted_cdf")
-    sns.scatterplot(x=xs, y=ys, ax=ax, alpha=0.7)
+    sns.scatterplot(x=xs, y=ys, ax=ax, alpha=0.7, **kwargs)
 
     # Compute the parameters m and b for the diagonal line
     xq25, xq75 = dist.ppf([0.25, 0.75])

@@ -58,7 +58,7 @@ from .linear_models import (
 )
 
 from .plots import (
-    nicebins
+    nicebins,
 )
 
 # TODO: Remove these from namespace in first major release.
