@@ -310,6 +310,8 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
 # Random samples
 ################################################################################
 
+DIAMOND_SIZE = 30         # size of the diamond shape that represents sample mean
+
 def gen_samples(rv, n=30, N=10):
     """
     Generate `N` samples of size `n` from the random variable `rv`.
@@ -324,7 +326,7 @@ def gen_samples(rv, n=30, N=10):
 
 
 def plot_samples(samples_df, ax=None, xlims=None, filename=None,
-                 showmean=True, showstd=False):
+                 showmean=True, showstd=False, figsize=None):
     """
     Draw a strip plots for each of the columns in `samples_df`.
     Annotate each strip plot with the mean for each sample.
@@ -333,20 +335,20 @@ def plot_samples(samples_df, ax=None, xlims=None, filename=None,
 
     # 1. Setup figure and axes
     if ax is None:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.figure
 
     # 2. Plot the samples as strip plot
-    sns.stripplot(samples_df, orient="h", s=3, palette=[blue]*N, ax=ax, alpha=0.8, jitter=0)
+    sns.stripplot(samples_df, orient="h", s=3, palette=[blue]*N, ax=ax, alpha=0.6, jitter=0)
 
-    # 3. Add annotations 
+    # 3. Add annotations
     for i in range(1, N+1):
         column_name = "sample " + str(i)
         xbar_i = samples_df[column_name].mean()
         if showmean:
             # diamond-shaped marker to indicate mean in each sample
-            ax.scatter(xbar_i, i-1, marker="D", s=45, color=orange, zorder=10)
+            ax.scatter(xbar_i, i-1, marker="D", s=DIAMOND_SIZE, color=orange, zorder=10)
         if showstd:
             # vertical bar to indicate xbar-std and xbar+std in each sample
             xstd_i = samples_df[column_name].std()
@@ -365,30 +367,33 @@ def plot_samples(samples_df, ax=None, xlims=None, filename=None,
 
 
 
-def plot_sampling_dist(stats, label=None, xlims=None, ax=None,
-                       binwidth=None, scatter="mean", filename=None):
+def plot_sampling_dist(stats, label=None, xlims=None, ax=None, rv_name=None, skip_xlabel=False,
+                       binwidth=None, scatter="mean", filename=None, figsize=None):
     """
     Plot a combined histogram and strip plot of the values in `stats`.
     """
     # 1. Setup figure and axes
     if ax is None:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.figure
     if binwidth is None:
         if xlims is None:
             xlims = min(stats), max(stats)
-        binwidth = (xlims[1]-xlims[0]) / 30            
+        binwidth = (xlims[1]-xlims[0]) / 50            
     
     # 2. Plot a histogram of the sampling distribution
-    sns.histplot(stats, binwidth=binwidth, stat="density", color="C1", ax=ax, label=label)
+    sns.histplot(stats, binwidth=binwidth, stat="density", color=orange, ax=ax, label=label)
+    if rv_name:
+        ax.set_ylabel("$f_{\\overline{\\mathbf{%s}}}$" % rv_name.upper())
+        if not skip_xlabel:
+            ax.set_xlabel("$\\overline{\\mathbf{%s}}$" % rv_name.lower())
 
     # 3. add the scatter plot of `stats` below
-    y_offset = 1/(100*binwidth)
+    y_offset = 1 / (100*binwidth)
     if scatter == "mean":
-        sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="D", s=30, alpha=0.1)
+        sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="D", s=DIAMOND_SIZE, alpha=0.1)
     elif scatter == "std":
-        # sns.scatterplot(x=[0.0], y=-y_offset, color=orange, marker="D", s=30, alpha=0.9)
         sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="|", s=30, alpha=0.1)
 
     # 4. Handle keyword arguments
@@ -410,7 +415,7 @@ def plot_samples_panel(rv, xlims, N=10, ns=[10,30,100], filename=None):
     Draw a panel of strip plots for `N` sample with sizes `ns`.
     Need to pass `xlims` because cannot be determined automatically.
     """
-    fig, axs = plt.subplots(1, len(ns), sharey=True, figsize=(10,2.5))
+    fig, axs = plt.subplots(1, len(ns), sharey=True, figsize=(7,2))
 
     for n, ax in zip(ns, axs):
         samples_df = gen_samples(rv, n=n, N=N)
@@ -421,31 +426,31 @@ def plot_samples_panel(rv, xlims, N=10, ns=[10,30,100], filename=None):
         savefigure(fig, filename)
 
 
-def plot_sampling_dists_panel(rv, xlims, N=1000, ns=[10,30,100], binwidth=None, filename=None):
+def plot_sampling_dists_panel(rv, xlims, N=1000, ns=[10,30,100], rv_name=None,
+                              binwidth=None, filename=None):
     """
     Draw a panel of combined histogram and strip plot of the sampling distributions
     of random variable `rv` for sample sizes `ns`.
     Need to pass appropriate `xlims` and `binwidth` parameters depending on `rv`.
     """
-    fig, axs = plt.subplots(1, len(ns), sharey=True, figsize=(10,2.5))
+    fig, axs = plt.subplots(1, len(ns), sharey=True, figsize=(7,2))
 
     # plot parameters
     xs = np.linspace(*xlims, 1000)
 
-    xbarss = []
     for n, ax in zip([10,30,100], axs):
         # A. generate and plot sampling distribution
         xbars = gen_sampling_dist(rv, np.mean, n=n, N=N)
-        plot_sampling_dist(xbars, ax=ax, xlims=xlims, binwidth=binwidth, label=f"$n={n}$")
+        plot_sampling_dist(xbars, ax=ax, rv_name=rv_name, xlims=xlims,
+                           binwidth=binwidth, label=f"$n={n}$", skip_xlabel=True)
         # B. plot the distribution predicted by the CLT
-        rvXbar = norm(rv.mean(), rv.std()/np.sqrt(n))
-        sns.lineplot(x=xs, y=rvXbar.pdf(xs), ax=ax, color="m")
-        xbarss.append(xbars)
+        rvXbar = norm(rv.mean(), rv.std() / np.sqrt(n))
+        sns.lineplot(x=xs, y=rvXbar.pdf(xs), ax=ax, color=purple)
 
     if filename:
         savefigure(fig, filename)
     
-    return xbarss
+    return fig
 
 
 

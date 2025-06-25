@@ -204,7 +204,7 @@ def plot_ecdf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, labe
     bs = np.linspace(0, xmax, 1000)
     Fxs = [ecdf(data,b) for b in bs]
     # label = f"eCDF({name})"
-    ax = sns.lineplot(x=bs, y=Fxs, drawstyle='steps-post')
+    ax = sns.lineplot(x=bs, y=Fxs, drawstyle='steps-post', label=label)
     ax.set_xlabel("$b$")
     ax.set_ylabel(f"$F_{{\\text{{{name}}}}}$")
     ax.set_xlim([0, xmax])

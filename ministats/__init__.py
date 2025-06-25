@@ -90,6 +90,8 @@ from .plots.probability import (
     plot_cdf,
     plot_pdf,
     qq_plot,
+    plot_epmf,
+    plot_ecdf,
 )
 
 from .plots.regression import (
