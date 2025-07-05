@@ -85,7 +85,7 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
 # Continuous random variables
 ################################################################################
 
-def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwargs):
+def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", a=None, b=None, ax=None, title=None, **kwargs):
     """
     Plot the pdf of the continuous random variable `rv` over the `xlims`.
     """
@@ -109,6 +109,18 @@ def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
     ax.set_ylabel(f"$f_{{{rv_name}}}$")
     if ylims:
         ax.set_ylim(*ylims)
+    
+    if a or b:
+        # Highlight the area under fX between x=a and x=b
+        if a is None:
+            a = rv.support()[0]
+        if b is None:
+            b = rv.support()[1]
+
+        mask = (xs > a) & (xs < b)
+        ax.fill_between(xs[mask], y1=fXs[mask], alpha=0.2)
+        ax.vlines([a], ymin=0, ymax=rv.pdf(a), linestyle="-", alpha=0.5)
+        ax.vlines([b], ymin=0, ymax=rv.pdf(b), linestyle="-", alpha=0.5)
 
     if title and title.lower() == "auto":
         title = "Probability density function of the random variable " + rv.dist.name + str(rv.args)
@@ -118,6 +130,81 @@ def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
     # return the axes
     return ax
 
+
+
+# Joint distribution plots
+################################################################################
+
+def get_meshgrid_and_pos(xlims, ylims, ngrid):
+    """
+    Create two 1D grids with `ngrid` points in each dimension,
+    then combine them using meshgrid and stack the results along a third dimension
+    as required to evaluate multivariate probability density function.
+    """
+    xmin, xmax = xlims
+    ymin, ymax = ylims
+    xs = np.linspace(xmin, xmax, ngrid)
+    ys = np.linspace(ymin, ymax, ngrid)
+    X, Y = np.meshgrid(xs, ys)
+    pos = np.empty(X.shape + (2,))
+    pos[:, :, 0] = X
+    pos[:, :, 1] = Y
+    # ALT.
+    # pos = np.dstack( (X, Y) )
+    return X, Y, pos
+
+
+def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None):
+    """
+    Contour plot of a bivariate joint distribution `rvXY`.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7,4))
+    else:
+        fig = ax.figure
+
+    # Compute the joint-probability density function values
+    X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
+    fXY = rvXY.pdf(pos)
+
+    # Contour plot
+    cax = ax.contourf(fXY,
+                      origin='lower',
+                      extent=(*xlims, *ylims),
+                      levels=10,
+                      cmap="Greys")
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+
+    return ax
+
+
+def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=None):
+    """
+    Surface plot of a bivariate joint distribution `rvXY`.
+    https://stackoverflow.com/questions/38698277/plot-normal-distribution-in-3d
+    """
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(7,7))
+    ax = plt.axes(projection='3d')
+
+    # Compute the joint-probability density function values
+    X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
+    fXY = rvXY.pdf(pos)
+
+    # Generate the 3D surface plot
+    ax.plot_surface(X, Y, fXY, cmap='Greys', linewidth=0)
+    ax.set_box_aspect((xlims[1]-xlims[0], ylims[1]-ylims[0], 3))
+    if viewdict is not None:
+        ax.view_init(**viewdict)
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    ax.set_zlabel('$f_{XY}$')
+    ax.set_zticks([])
+
+    return ax
 
 
 
@@ -143,7 +230,6 @@ def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, labe
         extrax = 0.3 * max(data)  # extend further to the right
         xmin = int(min(data))
         xmax = int(max(data) + extrax)
-    # xs = np.arange(xmin, xmax)
 
     # Compute the probability mass function and plot it
     data = np.array(data)

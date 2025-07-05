@@ -89,6 +89,8 @@ from .plots.probability import (
     plot_pmf,
     plot_cdf,
     plot_pdf,
+    plot_joint_pdf_contourf,
+    plot_joint_pdf_surface,
     qq_plot,
     plot_epmf,
     plot_ecdf,

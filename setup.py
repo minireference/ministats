@@ -41,7 +41,7 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
     ],
-    description="Common statistical testing procedures used for STATS 101 topics. The code is intentionally simple to make it easy to forllow for beginners.",
+    description="Common statistical testing procedures used for STATS 101 topics. The code is intentionally simple to make it easy to follow for beginners.",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,

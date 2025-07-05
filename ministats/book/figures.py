@@ -1,9 +1,16 @@
 import math
+
+from matplotlib import gridspec
+from matplotlib.collections import PolyCollection
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats.contingency import margins
 import seaborn as sns
 import xarray as xr
 
+from ..plots.probability import get_meshgrid_and_pos
+from ..plots.figures import calc_prob_and_plot
+from ..plots.figures import calc_prob_and_plot_tails
 
 # Probability theory
 ################################################################################
@@ -83,6 +90,233 @@ def plot_ks_dist_with_inset(sample, rv, label_sample="eCDF(sample)", label_rv="C
 
     # Return figure
     return fig
+
+
+
+# Section 2.4: Multivariate distributions
+################################################################################
+
+def plot_joint_pdf_and_marginals(rvXY, xlims, ylims, ngrid=200, fig=None):
+    """
+    Contour plot of a bivariate joint distribution $f_XY$ (`rvXY.pdf`) while
+    also showing the marginals $f_X$ and $f_Y$ on the sides.
+    """
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(7,4))
+
+    # Compute the joint-probability density function values
+    X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
+    fXY = rvXY.pdf(pos)
+
+    # Figure grid
+    gs = gridspec.GridSpec(2, 2, width_ratios=[6,1], height_ratios=[1,4])
+
+    # Contour plot of f_XY
+    ax = plt.subplot(gs[1,0])    
+    cax = ax.contourf(fXY, origin = 'lower',
+                      extent=(*xlims, *ylims),
+                      levels=12,
+                      cmap="Greys")
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    ax.text(5, 6, "$f_{XY}$", fontsize="x-large")
+
+    # Compute marginal distributions
+    fYm, fXm = margins(fXY)
+    dx = (xlims[1] - xlims[0]) / (ngrid - 1)
+    dy = (ylims[1] - ylims[0]) / (ngrid - 1)
+    fX = fXm.flatten() * dy
+    fY = fYm.flatten() * dx
+
+    # The marginal f_X (top)
+    xs = X[0]
+    axt = plt.subplot(gs[0,0], sharex=ax, frameon=False, xlim=xlims, ylim=(0, 1.1*fX.max()))
+    axt.plot(xs, fX, color = 'black')
+    axt.fill_between(xs, 0, fX, alpha=.5, color = 'gray')
+    axt.tick_params(labelbottom=False)
+    axt.tick_params(labelleft=False)
+    axt.text(5, 0.08, "$f_{X}$", fontsize="x-large")
+
+    # The marginal f_Y (right)
+    ys = Y[:,0]
+    axr = plt.subplot(gs[1,1], sharey=ax, frameon=False, xlim=(0, 1.05*fY.max()), ylim=ylims)
+    axr.plot(0*np.ones_like(ys), ys)
+    axr.plot(fY, ys, color = 'black')
+    axr.fill_betweenx(ys, 0, fY, alpha=0.5, color="gray")
+    axr.tick_params(labelbottom=False)
+    axr.tick_params(labelleft=False)
+    axr.text(0.3,3.2, "$f_{Y}$", fontsize="x-large")
+
+    return fig
+
+
+def find_nearest1(array, value):
+    """
+    Find the index of the `array` entry that is closest to `value`.
+    Helper function used by `plot_slices_through_joint_pdf` et al.
+    """
+    idx, _ = min(enumerate(array), key=lambda x: abs(x[1]-value))
+    return idx
+
+
+def polygon_under_graph(xs, ys):
+    """
+    Construct the vertex list that defines the polygon filling the space
+    under the curve that passes through the points `[(x,y) in zip(xs,ys)]`.
+    Helper function used by `plot_slices_through_joint_pdf` et al.
+    """
+    return [(xs[0], 0.), *zip(xs, ys), (xs[-1], 0.)]
+
+
+def plot_slices_through_joint_pdf(rvXY, xlims, ylims, xcuts, ngrid=500, fig=None):
+    """
+    Plot slices through the joint distribution $f_XY$ at the x-values in `xcuts`.
+    """
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(7,4))
+    ax = fig.add_subplot(projection='3d')
+
+    # Compute the joint-probability density function values
+    X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
+    xs, ys = X[0], Y[:,0]
+    fXY = rvXY.pdf(pos)
+
+    # The entry `verts[i]` is a list of (x,y) pairs defining polygon `i`
+    verts = []
+    for xcut in xcuts:
+        xidx = find_nearest1(xs, xcut)
+        fXY_at_xcut = fXY[xidx,:]
+        vert = polygon_under_graph(ys, fXY_at_xcut)
+        verts.append(vert)
+    
+    # Plot polygons
+    facecolors = plt.colormaps['viridis_r'](np.linspace(0, 1, len(verts)))
+    poly = PolyCollection(verts, facecolors=facecolors, alpha=.6)
+    ax.add_collection3d(poly, zs=xcuts, zdir='x')
+    ax.set_box_aspect((9, 5, 4))
+    zmax = 0.06
+    ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel='probability')
+    ax.set_xticks(range(4,17,1))
+
+    return fig
+
+
+def plot_conditional_fYgivenX(rvXY, xlims, ylims, xcuts, ngrid=500, fig=None):
+    """
+    Plot the conditional distribution $f_Y|X$ at the x-values in `xcuts`.
+    """
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(7,4))
+    ax = fig.add_subplot(projection='3d')
+
+    # Compute the joint-probability density function values
+    X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
+    xs, ys = X[0], Y[:,0]
+    fXY = rvXY.pdf(pos)
+
+    # hack to find normalizing height
+    xmid = xcuts[len(xcuts)//2]
+    xmididx = find_nearest1(xs, xmid)
+    fXY_at_xmid = fXY[xmididx,:]
+    fYgiven_xmid = fXY_at_xmid / np.sum(fXY_at_xmid)
+    maxfYgiven_xmid = max(fYgiven_xmid)
+
+    # The entry `verts[i]` is a list of (x,y) pairs defining polygon `i`
+    verts = []
+    for xcut in xcuts:
+        xidx = find_nearest1(xs, xcut)
+        fXY_at_xcut = fXY[xidx,:]
+        fYgiven_xcut = fXY_at_xcut / np.sum(fXY_at_xcut)
+        # hack to normalize height
+        zscale = max(fYgiven_xcut) / maxfYgiven_xmid
+        fYgiven_xcut = fYgiven_xcut / zscale
+        # /hack to normalize height
+        vert = polygon_under_graph(ys, fYgiven_xcut)
+        verts.append(vert)
+
+    # Plot polygons
+    facecolors = plt.colormaps['viridis_r'](np.linspace(0, 1, len(verts)))
+    poly = PolyCollection(verts, facecolors=facecolors, alpha=.7)
+    ax.add_collection3d(poly, zs=xcuts, zdir='x')
+    ax.set_box_aspect((9, 5, 4))
+    zmax = 0.006
+    ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel='probability');
+    ax.set_xticks(range(4, 17, 1))
+
+    return fig
+
+
+
+
+# Section 2.4: Bulk and tails of a continuous distribution
+################################################################################
+
+
+def bulk_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
+    """
+    Print a 1x3 panel figure highlighting the probability mass that lies within
+    `ns` standard deviations from the mean of the random variable `rvX`.
+    """
+    if fig is None:
+        fig, axs = plt.subplots(1, 3, figsize=(9.2,2), sharey=True)
+    else:
+        axs = fig.subplots(1, 3, sharey=True)
+
+    muX = rvX.mean()    # mean of the random variable rvX
+    sigmaX = rvX.std()  # standard deviation of rvX
+
+    for i, n in enumerate(ns):
+        ax = axs[i]
+        bulk_interval = [muX - n*sigmaX, muX + n*sigmaX]
+        letter = ["a", "b", "c"][i]
+        mu = "\\mu_" + rv_name
+        sigma = "\\sigma_" + rv_name
+        if n == 1:
+            title = f"({letter}) Pr($\\{{{mu}-{sigma} \\leq {rv_name} \\leq {mu}+{sigma}\\}}$)"
+        else:
+            title = f"({letter}) Pr($\\{{{mu}-{n}{sigma} \\leq {rv_name} \\leq {mu}+{n}{sigma}\\}}$)"
+        calc_prob_and_plot(rvX, *bulk_interval, xlims=xlims, ax=ax, title=title)
+        if xticks:
+            ax.set_xticks(xticks)
+
+    return fig
+
+
+
+def tails_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
+    """
+    Print a 1x3 panel figure highlighting the probability mass that lies within
+    `ns` standard deviations from the mean of the random variable `rvX`.
+    """
+    if fig is None:
+        fig, axs = plt.subplots(1, 3, figsize=(9.2,2), sharey=True)
+    else:
+        axs = fig.subplots(1, 3, sharey=True)
+
+    muX = rvX.mean()    # mean of the random variable rvX
+    sigmaX = rvX.std()  # standard deviation of rvX
+
+    for i, n in enumerate(ns):
+        ax = axs[i]
+        x_l = muX - n * sigmaX
+        x_r = muX + n * sigmaX
+        letter = ["a", "b", "c"][i]
+        mu = "\\mu_" + rv_name
+        sigma = "\\sigma_" + rv_name
+        if n == 1:
+            title = f"({letter}) Pr($\\{{{rv_name} \\leq {mu}-{sigma}\\}} \\cup \\{{{rv_name} \\geq {mu}+{sigma}\\}}$)"
+        else:
+            title = f"({letter}) Pr($\\{{{rv_name} \\leq {mu}-{n}{sigma}\\}} \\cup \\{{{rv_name} \\geq {mu}+{n}{sigma}\\}}$)"
+        calc_prob_and_plot_tails(rvX, x_l, x_r, xlims=xlims, ax=ax, title=title)
+        if xticks:
+            ax.set_xticks(xticks)
+
+    return fig
+
+
 
 
 

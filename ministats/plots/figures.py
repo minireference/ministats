@@ -214,7 +214,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
         mask = (x > a) & (x < b)
         ax0.fill_between(x[mask], y1=pX[mask], alpha=0.2, facecolor=blue)
         ax0.vlines([b], ymin=0, ymax=rv.pdf(b), linestyle="-", alpha=0.5, color=blue)
-        ax0.text(b, 0, "$b$", horizontalalignment="center", verticalalignment="top")
+        ax0.text(b, -rv.pdf(b)/16, "$b$", horizontalalignment="center", verticalalignment="top")
         ax0.text(b, rv.pdf(b)/2.5, r"Pr$(\{" + rv_name + r" \leq b \})$    ",
                  horizontalalignment="right", verticalalignment="center")
 
@@ -226,7 +226,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
     if b:
         # highlight the point x=b
         ax1.vlines([b], ymin=0, ymax=rv.cdf(b), linestyle="-", color=blue)
-        ax1.text(b, 0, "$b$", horizontalalignment="center", verticalalignment="top")
+        ax1.text(b, -rv.cdf(b)/16, "$b$", horizontalalignment="center", verticalalignment="top")
         ax1.text(b, rv.cdf(b), "$(b, F_{" + rv_name + "}(b))$",
                  horizontalalignment="right", verticalalignment="bottom")
         ax1.plot([b], [rv.cdf(b)], ".C0", markersize=7)
