@@ -10,7 +10,7 @@ from ..utils import savefigure
 
 def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label=None):
     """
-    Plot the pmf of the discrete random variable `rv` over the `xlims`.
+    Plot the PMF of the discrete random variable `rv` over the `xlims`.
     """
     # Setup figure and axes
     if ax is None:
@@ -22,15 +22,17 @@ def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label
     if xlims:
         xmin, xmax = xlims
     else:
-        xmin, xmax = rv.ppf(0.000000001), rv.ppf(0.99999)
+        xmin = 0
+        smax = rv.support()[1]
+        xmax = rv.ppf(0.99999) if smax == np.inf else smax + 1
     xs = np.arange(xmin, xmax)
 
     # Compute the probability mass function and plot it
     fXs = rv.pmf(xs)
     fXs = np.where(fXs == 0, np.nan, fXs)  # set zero fXs to np.nan
-    ax.stem(fXs, basefmt=" ", label=label)
+    ax.stem(xs, fXs, basefmt=" ", label=label)
     ax.set_xticks(xs)
-    ax.set_xlabel(rv_name.lower())
+    ax.set_xlabel("$" + rv_name.lower() + "$")
     ax.set_ylabel(f"$f_{{{rv_name}}}$")
     if ylims:
         ax.set_ylim(*ylims)
@@ -68,7 +70,7 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
     sns.lineplot(x=xs, y=FXs, ax=ax, **kwargs)
 
     # Set plot attributes
-    ax.set_xlabel(rv_name.lower())
+    ax.set_xlabel("$b$")
     ax.set_ylabel(f"$F_{{{rv_name}}}$")
     if ylims:
         ax.set_ylim(*ylims)
@@ -87,7 +89,7 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
 
 def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", a=None, b=None, ax=None, title=None, **kwargs):
     """
-    Plot the pdf of the continuous random variable `rv` over the `xlims`.
+    Plot the PDF of the continuous random variable `rv` over the `xlims`.
     """
     # Setup figure and axes
     if ax is None:
@@ -105,7 +107,7 @@ def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", a=None, b=None, ax=None, t
     # Compute the probability density function and plot it
     fXs = rv.pdf(xs)
     sns.lineplot(x=xs, y=fXs, ax=ax, **kwargs)
-    ax.set_xlabel(rv_name.lower())
+    ax.set_xlabel("$" + rv_name.lower() + "$")
     ax.set_ylabel(f"$f_{{{rv_name}}}$")
     if ylims:
         ax.set_ylim(*ylims)
@@ -242,7 +244,7 @@ def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, labe
     ax.set_xticks(range(xmin,xmax))
     # ax.set_ylim([-0.01,0.22])
     # ax.set_yticks([0, 0.1, 0.2])
-    ax.set_xlabel("$x$")
+    ax.set_xlabel("$b$")
     ax.set_ylabel(f"$f_{{\\text{{{name}}}}}$")
     # ax.set_xticks(xs)
     # ax.set_xlabel(rv_name.lower())
