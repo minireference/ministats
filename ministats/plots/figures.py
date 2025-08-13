@@ -276,7 +276,12 @@ def generate_pdf_panel(fname, xs, model, params_matrix,
             fXs = fXs_matrix[i][j]
             params = params_matrix[i][j]
             if model == expon:
-                display_params = {"scale": params["scale"]}
+                lam = 1 / params["scale"]
+                if np.isclose(lam, int(lam)):
+                    lam = int(lam)
+                else:
+                    lam = round(lam, 2)
+                display_params = {"lam": lam}
             elif model == gamma:
                 lam = 1 / params["scale"]
                 if lam >= 1:
