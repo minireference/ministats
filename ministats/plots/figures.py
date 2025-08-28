@@ -207,7 +207,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
     x = np.linspace(xmin, xmax, 1000)
     pX = rv.pdf(x)
     sns.lineplot(x=x, y=pX, ax=ax0)
-    ax0.set_title("Probability density function")
+    ax0.set_title("Probability density function", fontdict={"fontsize":14})
 
     if b:
         # highlight the area under pX between x=a and x=b
@@ -221,7 +221,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
     # 2. plot the CDF
     FX = rv.cdf(x)
     sns.lineplot(x=x, y=FX, ax=ax1)
-    ax1.set_title("Cumulative distribution function")
+    ax1.set_title("Cumulative distribution function", fontdict={"fontsize":14})
 
     if b:
         # highlight the point x=b
