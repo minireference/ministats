@@ -573,13 +573,13 @@ def plot_alpha_beta_errors(cohend, ax=None, xlims=None, n=9, alpha=0.05,
 
     # decision annotations
     if show_concl:
-        offset2 = 0.15
-        offset3 = 0.11
+        offset_arrows = -0.24
+        offset_labels = -0.13
         arrowprops2 = dict(facecolor='black', shrink=0.005, width=4, headwidth=10, headlength=12)
-        ax.annotate("", xy=(xmax, -offset2), xytext=(CV, -offset2), arrowprops=arrowprops2, annotation_clip=False)
-        ax.annotate('Reject $H_0$', xy=(xmax-0.1, -offset3), ha="right", annotation_clip=False, )
-        ax.annotate("", xy=(xmin, -offset2), xytext=(CV, -offset2), arrowprops=arrowprops2, annotation_clip=False)
-        ax.annotate('Fail to reject $H_0$', xy=(xmin+0.1, -offset3), ha="left", annotation_clip=False)
+        ax.annotate("", xy=(xmax, offset_arrows), xytext=(CV, offset_arrows), arrowprops=arrowprops2, annotation_clip=False)
+        ax.annotate('Reject $H_0$', xy=(xmax-0.1, offset_labels), ha="right", annotation_clip=False)
+        ax.annotate("", xy=(xmin, offset_arrows), xytext=(CV, offset_arrows), arrowprops=arrowprops2, annotation_clip=False)
+        ax.annotate('Fail to reject $H_0$', xy=(xmin+0.1, offset_labels), ha="left", annotation_clip=False)
 
     # print design params for other info
     print("Design params: n =", n, ", alpha =", alpha, ", beta =", beta, ", Delta =", muHA, ", d =", cohend, ", CV =", CV)
