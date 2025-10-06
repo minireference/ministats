@@ -519,11 +519,7 @@ def plot_alpha_beta_errors(cohend, ax=None, xlims=None, n=9, alpha=0.05,
     ax.spines['bottom'].set_color(axis_color)
     ax.tick_params(axis='x', colors=axis_color)
     ax.xaxis.label.set_color(axis_color)
-    aspect_ratio = ax.get_xlim()[1] / ax.get_ylim()[1] 
-    if aspect_ratio > 5:
-        ax.xaxis.set_label_coords(1, 0.1)
-    else:
-        ax.xaxis.set_label_coords(1, 0.2)
+    ax.xaxis.set_label_coords(1, 0.2)
 
     # errors
     alpha_x = (CV + rvXbarH0.ppf(0.94)) / 2 + alpha_offset[0]
