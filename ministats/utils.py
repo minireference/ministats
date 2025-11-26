@@ -1,8 +1,11 @@
 from contextlib import contextmanager
+import json
 import logging
-import os
-
 import matplotlib.pyplot as plt
+import os
+import urllib.parse
+import urllib.request
+
 
 
 
@@ -97,3 +100,175 @@ def savefigure(obj, filename, tight_layout_kwargs=None):
     filename2 = filename.replace(".pdf", ".png")
     fig.savefig(filename2, dpi=300, bbox_inches="tight", pad_inches=0)
     print("Saved figure to", filename2)
+
+
+
+
+# GITHUB DOWNLOAD HELPERS
+################################################################################
+
+def github_api_request(path, params=None):
+    """
+    Make a GET request to the GitHub REST API at the given path.
+    No authentication (sufficient for occasional use).
+    """
+    base_url = "https://api.github.com"
+    url = base_url + path
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    headers = {
+        "User-Agent": "python-stdlib-client",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req) as resp:
+        if resp.status != 200:
+            raise RuntimeError(
+                f"GitHub API error {resp.status}: {resp.read().decode(errors='replace')}"
+            )
+        return json.load(resp)
+
+
+def list_dir_recursive(owner, repo, path, branch="main"):
+    """
+    Recursively list all files under `path` in the given repo+branch.
+    Returns a list of file paths relative to the repo root.
+    """
+    api_path = f"/repos/{owner}/{repo}/contents/{path}"
+    items = github_api_request(api_path, params={"ref": branch})
+    files = []
+    for item in items:
+        item_type = item.get("type")
+        item_path = item.get("path")
+        if item_type == "file":
+            files.append(item_path)
+        elif item_type == "dir":
+            files.extend(list_dir_recursive(owner, repo, item_path, branch=branch))
+        # ignore symlinks, submodules etc.
+    return files
+
+
+def download_file_from_raw(owner, repo, branch, prefix, file_path, download_root):
+    """
+    Download file from GitHub and save to `download_root`.
+    Remove the `prefix` from the repo path to avoid adding subdirectory.
+    """
+    # Compute relative local path
+    prefix_slash = prefix + "/"
+    if file_path.startswith(prefix_slash):
+        relative = file_path[len(prefix_slash):]
+    else:
+        relative =  os.path.basename(file_path)
+    local_path = os.path.join(download_root, relative)
+    raw_url = (
+        f"https://raw.githubusercontent.com/"
+        f"{owner}/{repo}/{branch}/{file_path}"
+    )
+    # Ensure subdirectories exist
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    with urllib.request.urlopen(raw_url) as resp, open(local_path, "wb") as f:
+        chunk = resp.read(8192)
+        while chunk:
+            f.write(chunk)
+            chunk = resp.read(8192)
+    return local_path
+
+
+def download_files(owner, repo, branch, prefix, file_paths, download_root):
+    """
+    Download all files in `file_paths` to `download_root`,
+    preserving their relative paths.
+    """
+    downloaded = []
+    for fp in file_paths:
+        local_path = download_file_from_raw(owner, repo, branch, prefix, fp, download_root)
+        downloaded.append(local_path)
+    return downloaded
+
+
+def have_required_files(download_root, required_filenames):
+    """
+    Check if `download_root` exists and contains all `required_filenames`.
+    """
+    if not os.path.isdir(download_root):
+        return False
+    for name in required_filenames:
+        path = os.path.join(download_root, name)
+        if not os.path.isfile(path):
+            return False
+    return True
+
+
+
+
+# DATASET AND SIMDATA DOWNLOAD HELPERS
+################################################################################
+
+OWNER = "minireference"
+REPO = "noBSstats"
+BRANCH = "main"
+
+
+def ensure_datasets(force=False, verbose=False):
+    """
+    Check if the folder with datasets for the book are present
+    in the current directory and, if necessary, download them from:
+    https://github.com/minireference/noBSstats/tree/main/datasets
+    """
+    DATASETS_PATH = "datasets"  # directory within the repo
+    DATASETS_DOWNLOAD_ROOT = "datasets"  # local directory for datasets
+    REQUIRED_FILES = ["apples.csv", "doctors.csv", "eprices.csv"]
+
+    if force or not have_required_files(DATASETS_DOWNLOAD_ROOT, REQUIRED_FILES):
+        # List all files in https://github.com/minireference/noBSstats/tree/main/datasets
+        all_files = list_dir_recursive(OWNER, REPO, DATASETS_PATH, branch=BRANCH)
+        if verbose:
+            print("Data files found in noBSstats repo:")
+            for f in all_files:
+                print("  ", f)
+        # Download preserving subdirectory structure under datasets/
+        downloaded_paths = download_files(
+            OWNER, REPO, BRANCH, DATASETS_PATH, all_files, DATASETS_DOWNLOAD_ROOT
+        )
+        if verbose:
+            print("\nDownloaded files:")
+            for p in downloaded_paths:
+                print("  ", p)
+    else:
+        if verbose:
+            print(f"{DATASETS_DOWNLOAD_ROOT}/ already exists; skipping download.")
+
+
+
+def ensure_simdata(force=False, verbose=False):
+    """
+    Download the simulation data used in the notebooks from:
+    https://github.com/minireference/noBSstats/tree/main/notebooks/simdata
+    Files are downloaded into the local directory:
+        simdata/
+    and flattened so that only the filenames (no subdirectories) are kept.
+    """
+    SIMDATA_PATH = "notebooks/simdata"  # directory within the repo
+    SIMDATA_DOWNLOAD_ROOT = "simdata"        # local directory for simdata
+
+    # Only hit the API if forced or the local directory doesn't exist yet
+    if force or not os.path.isdir(SIMDATA_DOWNLOAD_ROOT):
+        # List all files in notebooks/simdata
+        all_files = list_dir_recursive(OWNER, REPO, SIMDATA_PATH, branch=BRANCH)
+        if verbose:
+            print("Simdata files found in noBSstats repo:")
+            for f in all_files:
+                print("  ", f)
+        # Download files, flattening under SIMDATA_PATH
+        downloaded_paths = download_files(
+            OWNER, REPO, BRANCH, SIMDATA_PATH, all_files, SIMDATA_DOWNLOAD_ROOT
+        )
+        if verbose:
+            print("\nDownloaded simdata files:")
+            for p in downloaded_paths:
+                print("  ", p)
+    else:
+        if verbose:
+            print(f"{SIMDATA_DOWNLOAD_ROOT}/ already exists; skipping download.")
+
+

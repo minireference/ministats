@@ -111,6 +111,11 @@ from .sampling import (
     gen_boot_dist
 )
 
+from .utils import (
+    ensure_datasets,
+    ensure_simdata,
+)
+
 
 # Functions that are intentionally left out of the public interface
 #  - from probs import MixtureModel, mixnorms
