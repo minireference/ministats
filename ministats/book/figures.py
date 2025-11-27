@@ -5,12 +5,15 @@ from matplotlib.collections import PolyCollection
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats.contingency import margins
+from scipy.stats import t as tdist
 import seaborn as sns
 import xarray as xr
 
-from ..plots.probability import get_meshgrid_and_pos
+from ..plots import nicebins
 from ..plots.figures import calc_prob_and_plot
 from ..plots.figures import calc_prob_and_plot_tails
+from ..plots.probability import get_meshgrid_and_pos
+
 
 # Probability theory
 ################################################################################
@@ -318,6 +321,338 @@ def tails_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+# Section 3.4: Tails of a sampling distributions
+################################################################################
+
+def plot_panel_pvalue_theta0_tails(figsize=(9,2.3)):
+    rvT = tdist(df=9)
+    xs = np.linspace(-4, 4, 1000)
+    ys = rvT.pdf(xs)
+
+    with plt.rc_context({"figure.figsize":figsize}), sns.axes_style("ticks"):
+        fig, (ax3, ax1, ax2) = plt.subplots(1,3)
+        ax3.set_ylabel(r"$f_{\widehat{\Theta}_0}$")
+
+        # RIGHT
+        title = '(a) right-tailed test'
+        ax3.set_title(title, fontsize=13)#, y=-0.26)
+        sns.lineplot(x=xs, y=ys, ax=ax3)
+        ax3.set_xlim(-4, 4)
+        ax3.set_ylim(0, 0.42)
+        ax3.set_xticks([0,2])
+        ax3.set_xticklabels([])
+        ax3.set_yticks([])
+        ax3.spines[['right', 'top']].set_visible(False)
+
+        # highlight the right tail
+        mask = (xs > 2)
+        ax3.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax3.vlines([2], ymin=0, ymax=rvT.pdf(2), linestyle="-", alpha=0.5, color="red")
+        ax3.text(2, -0.03, r"$\hat{\theta}_{\mathbf{x}}$", va="top", ha="center")
+        ax3.text(0, -0.04, r"$\theta_0$", va="top", ha="center")
+
+
+        # LEFT
+        title = '(b) left-tailed test'
+        ax1.set_title(title, fontsize=13) #, y=-0.26)
+        sns.lineplot(x=xs, y=ys, ax=ax1)
+        ax1.set_xlim(-4, 4)
+        ax1.set_ylim(0, 0.42)
+        ax1.set_xticks([-2,0])
+        ax1.set_xticklabels([])
+        ax1.set_yticks([])
+        ax1.spines[['left', 'right', 'top']].set_visible(False)
+
+        # highlight the left tail
+        mask = (xs < -2)
+        ax1.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax1.vlines([-2], ymin=0, ymax=rvT.pdf(-2), linestyle="-", alpha=0.5, color="red")
+        ax1.text(-2, -0.03, r"$\hat{\theta}_{\mathbf{x}}$", va="top", ha="center")
+        ax1.text(0, -0.04, r"$\theta_0$", va="top", ha="center")
+
+        # TWO-TAILED
+        title = '(c) two-tailed test'
+        ax2.set_title(title, fontsize=13)#, y=-0.26)
+        sns.lineplot(x=xs, y=ys, ax=ax2)
+        ax2.set_xlim(-4, 4)
+        ax2.set_ylim(0, 0.42)
+        ax2.set_xticks([-2,0,2])
+        ax2.set_xticklabels([])
+        ax2.set_yticks([])
+        ax2.spines[['left', 'right', 'top']].set_visible(False)
+
+        # highlight the left and right tails
+        mask = (xs < -2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.vlines([-2], ymin=0, ymax=rvT.pdf(-2), linestyle="-", alpha=0.5, color="red")
+        # ax2.text(-2, -0.03, r"$-|\hat{\theta}_{\mathbf{x}}|$", va="top", ha="center")
+        ax2.text(-2, -0.03, r"$\theta_0$-dev", va="top", ha="center")
+        mask = (xs > 2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.vlines([2], ymin=0, ymax=rvT.pdf(2), linestyle="-", alpha=0.5, color="red")
+        ax2.text(2, -0.03, r"$\theta_0$+dev", va="top", ha="center")
+        ax2.text(0, -0.04, r"$\theta_0$", va="top", ha="center")
+
+    return fig
+
+
+
+def plot_panel_pvalue_t_tails(figsize=(9,2.3)):    
+    rvT = tdist(df=9)
+    xs = np.linspace(-4, 4, 1000)
+    ys = rvT.pdf(xs)
+
+    with plt.rc_context({"figure.figsize":figsize}), sns.axes_style("ticks"):
+        fig, (ax3, ax1, ax2) = plt.subplots(1,3)
+        ax3.set_ylabel("$f_{T_0}$")
+
+        # RIGHT
+        title = '(a) right-tailed test'
+        ax3.set_title(title, fontsize=13)#, y=-0.26)
+        sns.lineplot(x=xs, y=ys, ax=ax3)
+        ax3.set_xlim(-4, 4)
+        ax3.set_ylim(0, 0.42)
+        ax3.set_xticks([0,2])
+        ax3.set_xticklabels([])
+        ax3.set_yticks([])
+        ax3.spines[['right', 'top']].set_visible(False)
+
+        # highlight the right tail
+        mask = (xs > 2)
+        ax3.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax3.vlines([2], ymin=0, ymax=rvT.pdf(2), linestyle="-", alpha=0.5, color="red")
+        ax3.text(2, -0.03, r"$t_{\mathbf{x}}$", va="top", ha="center")
+        ax3.text(0, -0.04, r"$0$", va="top", ha="center")
+
+        # LEFT
+        title = '(b) left-tailed test'
+        ax1.set_title(title, fontsize=13) #, y=-0.26)
+        sns.lineplot(x=xs, y=ys, ax=ax1)
+        ax1.set_xlim(-4, 4)
+        ax1.set_ylim(0, 0.42)
+        ax1.set_xticks([-2,0])
+        ax1.set_xticklabels([])
+        ax1.set_yticks([])
+        ax1.spines[['left', 'right', 'top']].set_visible(False)
+
+        # highlight the left tail
+        mask = (xs < -2)
+        ax1.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax1.vlines([-2], ymin=0, ymax=rvT.pdf(-2), linestyle="-", alpha=0.5, color="red")
+        ax1.text(-2, -0.03, r"$t_{\mathbf{x}}$", va="top", ha="center")
+        ax1.text(0, -0.04, r"$0$", va="top", ha="center")
+
+        # TWO-TAILED
+        title = '(c) two-tailed test'
+        ax2.set_title(title, fontsize=13)#, y=-0.26)
+        sns.lineplot(x=xs, y=ys, ax=ax2)
+        ax2.set_xlim(-4, 4)
+        ax2.set_ylim(0, 0.42)
+        ax2.set_xticks([-2,0,2])
+        ax2.set_xticklabels([])
+        ax2.set_yticks([])
+        ax2.spines[['left', 'right', 'top']].set_visible(False)
+
+        # highlight the left and right tails
+        mask = (xs < -2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.vlines([-2], ymin=0, ymax=rvT.pdf(-2), linestyle="-", alpha=0.5, color="red")
+        ax2.text(-2, -0.03, r"$-|t_{\mathbf{x}}|$", va="top", ha="center")
+        mask = (xs > 2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.vlines([2], ymin=0, ymax=rvT.pdf(2), linestyle="-", alpha=0.5, color="red")
+        ax2.text(2, -0.03, r"$|t_{\mathbf{x}}|$", va="top", ha="center")
+        ax2.text(0, -0.04, r"$0$", va="top", ha="center")
+
+    return fig
+
+
+
+
+
+# Section 3.5: Tails of a sampling distributions
+################################################################################
+
+
+def plot_panel_pvalue_D0_hist_and_dist(figsize=(7,2)):
+    rvT = tdist(df=9)
+    xs = np.linspace(-4, 4, 1000)
+    ys = rvT.pdf(xs)
+    N = 100000
+    np.random.seed(42)
+    ts = rvT.rvs(N)
+    bins = nicebins(xs, 2, nbins=50)
+    with plt.rc_context({"figure.figsize":figsize}), sns.axes_style("ticks"):
+        fig, (ax1, ax2) = plt.subplots(1,2)
+
+        # D0 hist
+        sns.histplot(ts, ax=ax1, bins=bins, alpha=0.3)
+        ax1.set_title("(a) permutation test")
+        ax1.set_xlim(-4, 4)
+        ax1.set_xticks([2])
+        ax1.set_xticklabels([])
+        ax1.set_yticks([])
+        ax1.set_ylabel(r"$f_{\widehat{D}_0}$")
+        # highlight the left and right tails
+        tailvaluesl = [t for t in ts if t <= -2]
+        sns.histplot(tailvaluesl, bins=bins, ax=ax1, color="red")
+        ax1.text(-2.3, -630, r"$-|\hat{d}|$", verticalalignment="top", horizontalalignment="center")
+        tailvaluesr = [t for t in ts if t >= 2]
+        sns.histplot(tailvaluesr, bins=bins, ax=ax1, color="red")
+        ax1.text(2, -630, r"$|\hat{d}|$", verticalalignment="top", horizontalalignment="center")
+        # ax1.axvline(2, color="red")
+        
+        # D0 dist
+        sns.lineplot(x=xs, y=ys, ax=ax2)
+        ax2.set_title("(b) analytical apprixmation")
+        ax2.set_xlim(-4, 4)
+        ax2.set_ylim(0, 0.42)
+        ax2.set_xticks([-2,2])
+        ax2.set_xticklabels([])
+        ax2.set_yticks([])
+        ax2.set_ylabel(r"$f_{\widehat{D}_0}$")
+        # highlight the left and right tails
+        mask = (xs < -2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.text(-2, -0.03, r"$-|\hat{d}|$", verticalalignment="top", horizontalalignment="center")
+        mask = (xs > 2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.text(2, -0.03, r"$|\hat{d}|$", verticalalignment="top", horizontalalignment="center")
+
+    return fig
+
+
+
+def plot_panel_pvalue_D0_and_T0(figsize=(7,2)):
+    from scipy.stats import t as tdist
+    rvT = tdist(df=9)
+    xs = np.linspace(-4, 4, 1000)
+    ys = rvT.pdf(xs)
+    with plt.rc_context({"figure.figsize":figsize}), sns.axes_style("ticks"):
+        fig, (ax1, ax2) = plt.subplots(1,2)
+
+        # D0
+        sns.lineplot(x=xs, y=ys, ax=ax1)
+        ax1.set_xlim(-4, 4)
+        ax1.set_ylim(0, 0.42)
+        ax1.set_xticks([2])
+        ax1.set_xticklabels([])
+        ax1.set_yticks([])
+        ax1.set_ylabel(r"$f_{\widehat{D}_0}$")
+        # highlight the left and right tails
+        mask = (xs < -2)
+        ax1.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax1.text(-2, -0.03, r"$-|\hat{d}|$", verticalalignment="top", horizontalalignment="center")
+        mask = (xs > 2)
+        ax1.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax1.text(2, -0.03, r"$|\hat{d}|$", verticalalignment="top", horizontalalignment="center")
+
+        # T0
+        sns.lineplot(x=xs, y=ys, ax=ax2)
+        ax2.set_xlim(-4, 4)
+        ax2.set_ylim(0, 0.42)
+        ax2.set_xticks([-2,2])
+        ax2.set_xticklabels([])
+        ax2.set_yticks([])
+        ax2.set_ylabel("$f_{T_0}$")
+        # highlight the left and right tails
+        mask = (xs < -2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.text(-2, -0.03, r"$-|t|$", verticalalignment="top", horizontalalignment="center")
+        mask = (xs > 2)
+        ax2.fill_between(xs[mask], y1=ys[mask], alpha=0.6, facecolor="red")
+        ax2.text(2, -0.03, r"$|t|$", verticalalignment="top", horizontalalignment="center")
+
+    return fig
+
+
+# Section 3.6 — Statistical design and error analysis
+################################################################################
+
+
+
+def plot_rejection_region(ax, xs, ys, rvT, alt, title):
+    # design choices
+    transp = 0.3
+    alpha_color = "#4A25FF"
+    beta_color = "#0CB0D6"
+    axis_color = "#808080"
+
+    ax.set_title(title, fontsize=11)
+
+    # manually add arrowhead to x-axis + label t at the end
+    ax.plot(1, 0, ">", color=axis_color, transform=ax.get_yaxis_transform(), clip_on=False)
+    ax.set_xlabel("t")
+    ax.xaxis.set_label_coords(1, 0.2)
+
+    sns.lineplot(x=xs, y=ys, ax=ax, color="k")
+    ax.set_xlim(-4, 4)
+    ax.set_ylim(0, 0.42)
+    ax.set_xticklabels([])
+    ax.set_yticks([])
+    ax.spines[['left', 'right', 'top']].set_visible(False)
+    ax.spines['bottom'].set_color(axis_color)
+    ax.tick_params(axis='x', colors=axis_color)
+    ax.xaxis.label.set_color(axis_color)
+    
+    if alt == "greater":
+        ax.set_xticks([2])
+        # highlight the right tail
+        mask = (xs > 2)
+        ax.fill_between(xs[mask], y1=ys[mask], alpha=transp, facecolor=alpha_color)
+        ax.vlines([2], ymin=0, ymax=rvT.pdf(2), linestyle="-", alpha=transp+0.2, color=alpha_color)
+        ax.text(2, -0.03, r"$\mathrm{CV}_{\alpha}^+$", verticalalignment="top", horizontalalignment="center")
+
+    elif alt == "less":
+        ax.set_xticks([-2])
+        # highlight the left tail
+        mask = (xs < -2)
+        ax.fill_between(xs[mask], y1=ys[mask], alpha=transp, facecolor=alpha_color)
+        ax.vlines([-2], ymin=0, ymax=rvT.pdf(-2), linestyle="-", alpha=transp+0.2, color=alpha_color)
+        ax.text(-2, -0.03, r"$\mathrm{CV}_{\alpha}^-$", verticalalignment="top", horizontalalignment="center")
+
+    elif alt == "two-sided":
+        ax.set_xticks([-2,2])
+        # highlight the left and right tails
+        mask = (xs < -2)
+        ax.fill_between(xs[mask], y1=ys[mask], alpha=transp, facecolor=alpha_color)
+        ax.vlines([-2], ymin=0, ymax=rvT.pdf(-2), linestyle="-", alpha=transp+0.2, color=alpha_color)
+        ax.text(-2, -0.03, r"$\mathrm{CV}_{\alpha/2}^-$", verticalalignment="top", horizontalalignment="center")
+        mask = (xs > 2)
+        ax.fill_between(xs[mask], y1=ys[mask], alpha=transp, facecolor=alpha_color)
+        ax.vlines([2], ymin=0, ymax=rvT.pdf(2), linestyle="-", alpha=transp+0.2, color=alpha_color)
+        ax.text(2, -0.03, r"$\mathrm{CV}_{\alpha/2}^+$", verticalalignment="top", horizontalalignment="center")
+
+
+
+def plot_panel_rejection_regions(figsize=(7,1.6)):
+    rvT = tdist(df=9)
+    xs = np.linspace(-4, 4, 1000)
+    ys = rvT.pdf(xs)
+    with sns.axes_style("ticks"), plt.rc_context({"figure.figsize":figsize}):
+        fig, (ax3, ax1, ax2) = plt.subplots(1,3)
+        # RIGHT
+        title = '(a) right-tailed rejection region'
+        plot_rejection_region(ax3, xs, ys, rvT, "greater", title)
+        # LEFT
+        title = '(b) left-tailed rejection region'
+        plot_rejection_region(ax1, xs, ys, rvT, "less", title)
+        # TWO-TAILED
+        title = '(c) two-tailed rejection region'
+        plot_rejection_region(ax2, xs, ys, rvT, "two-sided", title)
+        fig.tight_layout()
+        return fig
 
 
 # Hierarchical models

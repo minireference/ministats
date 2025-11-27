@@ -640,7 +640,7 @@ def plot_residuals2(xdata, ydata, b0, b1, xlims=None, ax=None):
 # Hypothesis tests as linear models
 ################################################################################
 
-def plot_lm_ttest(data, x, y, ax=None):
+def plot_lm_ttest(data, x, y, ax=None, usetex=False):
     """
     Plot a combined scatterplot, means, and LM slope line
     to illustrate the equivalence between two-sample t-test
@@ -652,7 +652,7 @@ def plot_lm_ttest(data, x, y, ax=None):
     interceptlab, slopelab = lm.params.index
 
     # Plot the data
-    with plt.rc_context({"text.usetex":True}):
+    with plt.rc_context({"text.usetex":usetex}):
         ax = plt.gca() if ax is None else ax
         sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2)
         sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D")
@@ -664,7 +664,11 @@ def plot_lm_ttest(data, x, y, ax=None):
         ax.set_xticks([0,1])
         ax.set_xticklabels([newxlabel0, newxlabel1])
         ax.set_xlim([-0.3, 1.3])
-        ax.set_xlabel(f"$\\texttt{{{x}}}_{{\\texttt{{{xlabel1}}}}}$")
+        if usetex:
+            xlabel = f"$\\texttt{{{x}}}_{{\\texttt{{{xlabel1}}}}}$"
+        else:
+            xlabel = f"$\\mathrm{{{x}}}_{{\\mathrm{{{xlabel1}}}}}$"
+        ax.set_xlabel(xlabel)
         ax.xaxis.set_label_coords(0.5, -0.15)
 
         # Get seaborn colors
@@ -678,17 +682,28 @@ def plot_lm_ttest(data, x, y, ax=None):
         ax.plot([0, 1], [beta0, beta0 + beta1], color="k")
 
         # Draw custom legend
-        blue_diamond = mlines.Line2D([], [], color=snspal[0], marker='D', ls="",
-            label=f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean")
-        yellow_diamond = mlines.Line2D([], [], color=snspal[1], marker='D', ls="",
-            label=f"$\\widehat{{\\beta}}_0 + \\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean")
-        slope_line = mlines.Line2D([], [], color="k",
-            label=f"$\\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope")
+        if usetex:
+            blue_label = f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = {xlabel0} mean"
+        else:
+            blue_label = f"$\\widehat{{\\beta}}_0$ = {interceptlab} = {xlabel0} mean"
+        blue_diamond = mlines.Line2D([], [], color=snspal[0], marker='D', ls="", label=blue_label)
+        #
+        if usetex:
+            yellow_label = f"$\\widehat{{\\beta}}_0 + \\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = {xlabel1} mean"
+        else:
+            yellow_label = f"$\\widehat{{\\beta}}_0 + \\widehat{{\\beta}}_{{\\mathrm{{{xlabel1}}}}}$ = {xlabel1} mean"
+        yellow_diamond = mlines.Line2D([], [], color=snspal[1], marker='D', ls="",label=yellow_label)
+        #
+        if usetex:
+            slope_label = f"$\\widehat{{\\beta}}_{{\\texttt{{{xlabel1}}}}}$ = \\texttt{{{slopelab}}} slope"
+        else:
+            slope_label = f"$\\widehat{{\\beta}}_{{\\mathrm{{{xlabel1}}}}}$ = {slopelab} slope"
+        slope_line = mlines.Line2D([], [], color="k", label=slope_label)
         ax.legend(handles=[blue_diamond, yellow_diamond, slope_line])
         return ax
 
 
-def plot_lm_anova(data, x, y, ax=None):
+def plot_lm_anova(data, x, y, ax=None, usetex=False):
     """
     Plot a combined scatterplot, means, and LM slope lines
     to illustrate the equivalence between ANOVA test and
@@ -707,7 +722,7 @@ def plot_lm_anova(data, x, y, ax=None):
                   (5, (10, 3))]             # long dash with offset
 
     # Plot the data
-    with plt.rc_context({"text.usetex":True}):
+    with plt.rc_context({"text.usetex":usetex}):
         ax = plt.gca() if ax is None else ax
         sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2, order=labels, hue_order=labels)
         sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D", hue_order=labels)
@@ -715,8 +730,11 @@ def plot_lm_anova(data, x, y, ax=None):
         # Group 1 (baseline)
         beta0 = lm.params.iloc[0]
         interceptlab = lm.params.index[0]
-        ax.axhline(beta0, color=snspal[0], linewidth=1,
-                label=f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = \\texttt{{{labels[0]}}} mean")
+        if usetex:
+            label_text = f"$\\widehat{{\\beta}}_0$ = \\texttt{{{interceptlab}}} = \\texttt{{{labels[0]}}} mean"
+        else:
+            label_text = f"$\\widehat{{\\beta}}_0$ = {interceptlab} = {labels[0]} mean"
+        ax.axhline(beta0, color=snspal[0], linewidth=1, label=label_text)
 
         # Remaining groups
         for i in range(1, len(labels)):
@@ -725,8 +743,12 @@ def plot_lm_anova(data, x, y, ax=None):
             slopelab = lm.params.index[i]
             linestyle = linestyles[i%len(linestyles)]
             ax.hlines(beta0+beta, xmin=i-0.2, xmax=i+0.2, color=snspal[i])
-            ax.plot([i-0.7, i], [beta0, beta0 + beta], color="k", linestyle=linestyle,
-                    label=f"$\\widehat{{\\beta}}_{{\\texttt{{{label}}}}}$ = \\texttt{{{slopelab}}} slope")
+
+            if usetex:
+                label_text_i = f"$\\widehat{{\\beta}}_{{\\texttt{{{label}}}}}$ = \\texttt{{{slopelab}}} slope"
+            else:
+                label_text_i = f"$\\widehat{{\\beta}}_{{\\mathrm{{{label}}}}}$ = {slopelab} slope"
+            ax.plot([i-0.7, i], [beta0, beta0 + beta], color="k", linestyle=linestyle, label=label_text_i)
 
         # Return axes
         ax.legend()

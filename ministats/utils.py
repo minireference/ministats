@@ -218,7 +218,6 @@ def ensure_datasets(force=False, verbose=False):
     DATASETS_PATH = "datasets"  # directory within the repo
     DATASETS_DOWNLOAD_ROOT = "datasets"  # local directory for datasets
     REQUIRED_FILES = ["apples.csv", "doctors.csv", "eprices.csv"]
-
     if force or not have_required_files(DATASETS_DOWNLOAD_ROOT, REQUIRED_FILES):
         # List all files in https://github.com/minireference/noBSstats/tree/main/datasets
         all_files = list_dir_recursive(OWNER, REPO, DATASETS_PATH, branch=BRANCH)
@@ -237,6 +236,7 @@ def ensure_datasets(force=False, verbose=False):
     else:
         if verbose:
             print(f"{DATASETS_DOWNLOAD_ROOT}/ already exists; skipping download.")
+    print(f"{DATASETS_DOWNLOAD_ROOT}/ directory present and ready.")
 
 
 
@@ -250,7 +250,6 @@ def ensure_simdata(force=False, verbose=False):
     """
     SIMDATA_PATH = "notebooks/simdata"  # directory within the repo
     SIMDATA_DOWNLOAD_ROOT = "simdata"        # local directory for simdata
-
     # Only hit the API if forced or the local directory doesn't exist yet
     if force or not os.path.isdir(SIMDATA_DOWNLOAD_ROOT):
         # List all files in notebooks/simdata
@@ -270,5 +269,5 @@ def ensure_simdata(force=False, verbose=False):
     else:
         if verbose:
             print(f"{SIMDATA_DOWNLOAD_ROOT}/ already exists; skipping download.")
-
+    print(f"{SIMDATA_DOWNLOAD_ROOT}/ directory present and ready.")
 
