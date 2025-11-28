@@ -3,10 +3,9 @@ import json
 import logging
 import matplotlib.pyplot as plt
 import os
+import shutil
 import urllib.parse
 import urllib.request
-
-
 
 
 
@@ -209,23 +208,49 @@ REPO = "noBSstats"
 BRANCH = "main"
 
 
-def ensure_datasets(force=False, verbose=False):
+def ensure_datasets(verbose=False):
     """
-    Check if the folder with datasets for the book are present
-    in the current directory and, if necessary, download them from:
-    https://github.com/minireference/noBSstats/tree/main/datasets
+    Make sure the `datasets/` folder with data files for
+    the book is present in the current directory and.
+    Otherwise:
+    1. If ../datasets/ exists and contains the required files,
+       copy from ../datasets/ to ./datasets/
+    2. Download the files from GitHub repo:
+       https://github.com/minireference/noBSstats/tree/main/datasets
     """
-    DATASETS_PATH = "datasets"  # directory within the repo
-    DATASETS_DOWNLOAD_ROOT = "datasets"  # local directory for datasets
-    REQUIRED_FILES = ["apples.csv", "doctors.csv", "eprices.csv"]
-    if force or not have_required_files(DATASETS_DOWNLOAD_ROOT, REQUIRED_FILES):
-        # List all files in https://github.com/minireference/noBSstats/tree/main/datasets
+    DATASETS_PATH = "datasets"
+    DATASETS_DOWNLOAD_ROOT = "datasets"
+    PARENT_DATASETS = os.path.join("..", "datasets")
+    REQUIRED_FILES = ["apples.csv", "doctors.csv", "eprices.csv"]    
+    if have_required_files(DATASETS_DOWNLOAD_ROOT, REQUIRED_FILES):
+        print(f"{DATASETS_DOWNLOAD_ROOT}/ directory already exists.")
+    elif have_required_files(PARENT_DATASETS, REQUIRED_FILES):
+        # Copy files from ../datasets/ to ./datasets/ (when working with .zip download)
+        if verbose:
+            print(f"Found valid datasets in {PARENT_DATASETS}/, copying recursively...")
+        # Ensure local datasets folder exists
+        os.makedirs(DATASETS_DOWNLOAD_ROOT, exist_ok=True)
+        # Recursively copy contents of ../datasets/ into ./datasets/
+        for root, dirs, files in os.walk(PARENT_DATASETS):
+            # Compute relative path inside ../datasets/
+            rel = os.path.relpath(root, PARENT_DATASETS)
+            target_root = (DATASETS_DOWNLOAD_ROOT if rel == "." else os.path.join(DATASETS_DOWNLOAD_ROOT, rel) )
+            os.makedirs(target_root, exist_ok=True)
+            # Copy all files
+            for fname in files:
+                src = os.path.join(root, fname)
+                dst = os.path.join(target_root, fname)
+                shutil.copy2(src, dst)
+                if verbose:
+                    print(f"  copied {src} -> {dst}")
+        print(f"Found {PARENT_DATASETS}/ and copied files to {DATASETS_DOWNLOAD_ROOT}/.")
+    else:
+        # Download files from GitHub
         all_files = list_dir_recursive(OWNER, REPO, DATASETS_PATH, branch=BRANCH)
         if verbose:
             print("Data files found in noBSstats repo:")
             for f in all_files:
                 print("  ", f)
-        # Download preserving subdirectory structure under datasets/
         downloaded_paths = download_files(
             OWNER, REPO, BRANCH, DATASETS_PATH, all_files, DATASETS_DOWNLOAD_ROOT
         )
@@ -233,11 +258,7 @@ def ensure_datasets(force=False, verbose=False):
             print("\nDownloaded files:")
             for p in downloaded_paths:
                 print("  ", p)
-    else:
-        if verbose:
-            print(f"{DATASETS_DOWNLOAD_ROOT}/ already exists; skipping download.")
-    print(f"{DATASETS_DOWNLOAD_ROOT}/ directory present and ready.")
-
+        print(f"Downloaded data files to {DATASETS_DOWNLOAD_ROOT}/ from GitHub.")
 
 
 def ensure_simdata(force=False, verbose=False):
