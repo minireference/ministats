@@ -4,7 +4,8 @@ scipy>=1.6,<1.13
 pandas>=2
 seaborn>=0.13.2
 statsmodels>=0.14.1
-bambi
+bambi==0.15.0
+pymc==5.23.0
 arviz
 
 

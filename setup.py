@@ -18,7 +18,8 @@ requirements = [
     "pandas>=2",
     "seaborn>=0.13.2",
     "statsmodels>=0.14.1",
-    "bambi",
+    "bambi==0.15.0",    # pinned because of https://github.com/pymc-devs/pymc/issues/7978
+    "pymc==5.23.0",     # pinned becasue of https://github.com/pymc-devs/pymc/issues/7978
     "arviz",
     "pingouin>=0.5.5",
 ]
