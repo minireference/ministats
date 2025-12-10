@@ -158,18 +158,16 @@ def get_meshgrid_and_pos(xlims, ylims, ngrid):
 
 def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None):
     """
-    Contour plot of a bivariate joint distribution `rvXY`.
+    Filled contour plot of the bivariate joint distribution `rvXY`.
     """
     # Setup figure and axes
     if ax is None:
         fig, ax = plt.subplots(figsize=(7,4))
     else:
         fig = ax.figure
-
     # Compute the joint-probability density function values
     X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
     fXY = rvXY.pdf(pos)
-
     # Contour plot
     cax = ax.contourf(fXY,
                       origin='lower',
@@ -178,7 +176,30 @@ def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None):
                       cmap="Greys")
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
+    return ax
 
+
+def plot_joint_pdf_contour(rvXY, xlims, ylims, ngrid=200, ax=None, levels=None):
+    """
+    Contour lines plot of the bivariate joint distribution `rvXY`.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7,4))
+    else:
+        fig = ax.figure
+    # Compute the joint-probability density function values
+    X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
+    fXY = rvXY.pdf(pos)
+    # Contour plot
+    cplot = ax.contour(X, Y, fXY,
+                       origin='lower',
+                       extent=(*xlims, *ylims),
+                       levels=levels,
+                       cmap="Greys")
+    plt.clabel(cplot, inline=1, fontsize=9) #  fmt='%1.1f')
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
     return ax
 
 

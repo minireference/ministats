@@ -754,3 +754,73 @@ def plot_counties(radon, idata_cp=None, idata_np=None, idata_pp=None, idata_pp2=
             axes[i].set_ylabel("log radon level")
 
     return fig
+
+
+
+# CALCULUS TUTORIAL
+################################################################################
+
+def plot_slices_through_paraboloid(direction="x", xmax=2.01, ymax=4.02,
+                                   ngrid=400, fig=None):
+    """
+    Plot slices through the surface z = 4 - x^2 - y^2/4.
+
+    direction = "x": slices at fixed x, varying y.
+        xs = [-1.9, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 1.9]
+    direction = "y": slices at fixed y, varying x.
+        ys = [-3.9, -3, -2, -1, 0, 1, 2, 3, 3.9]
+    """
+    if fig is None:
+        fig = plt.figure(figsize=(7, 4))
+    ax = fig.add_subplot(projection="3d")
+
+    # Grid on x,y plane
+    x = np.linspace(-xmax, xmax, ngrid)
+    y = np.linspace(-ymax, ymax, ngrid)
+    X, Y = np.meshgrid(x, y, indexing="xy")
+    Z = 4 - X**2 - Y**2 / 4.0
+
+    # Only keep the "cap" z >= 0
+    Z = np.maximum(Z, 0.0)
+
+    if direction == "x":
+        cuts = np.array([-1.9, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 1.9])
+        # Polygons live in (y,z)-plane; extruded along x
+        verts = []
+        for xcut in cuts:
+            idx = find_nearest1(x, xcut)        # column in X,Z
+            z_slice = Z[:, idx]                 # as function of y
+            vert = polygon_under_graph(y, z_slice)
+            verts.append(vert)
+        facecolors = plt.colormaps["viridis_r"](np.linspace(0, 1, len(verts)))
+        poly = PolyCollection(verts, facecolors=facecolors, alpha=0.6)
+        ax.add_collection3d(poly, zs=cuts, zdir="x")
+
+    elif direction == "y":
+        cuts = np.array([-3.9, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 3.9])
+        # Polygons live in (x,z)-plane; extruded along y
+        verts = []
+        for ycut in cuts:
+            idx = find_nearest1(y, ycut)        # row in Y,Z
+            z_slice = Z[idx, :]                 # as function of x
+            vert = polygon_under_graph(x, z_slice)
+            verts.append(vert)
+        facecolors = plt.colormaps["viridis_r"](np.linspace(0, 1, len(verts)))
+        poly = PolyCollection(verts, facecolors=facecolors, alpha=0.6)
+        ax.add_collection3d(poly, zs=cuts, zdir="y")
+
+    else:
+        raise ValueError("direction must be 'x' or 'y'")
+
+    # Axes settings
+    # ax.set_box_aspect((2 * xmax, 2 * ymax, 4))  # roughly match geometry
+    ax.set(
+        xlim=(-xmax, xmax),
+        ylim=(-ymax, ymax),
+        zlim=(0, 4.0),
+        xlabel="$x$",
+        ylabel="$y$",
+        zlabel="$z$",
+    )
+
+    return ax
