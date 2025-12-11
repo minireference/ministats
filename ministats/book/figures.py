@@ -9,6 +9,9 @@ from scipy.stats import t as tdist
 import seaborn as sns
 import xarray as xr
 
+
+
+from ..calculus import plot_integral
 from ..plots import nicebins
 from ..plots.figures import calc_prob_and_plot
 from ..plots.figures import calc_prob_and_plot_tails
@@ -760,6 +763,55 @@ def plot_counties(radon, idata_cp=None, idata_np=None, idata_pp=None, idata_pp2=
 # CALCULUS TUTORIAL
 ################################################################################
 
+def integral_as_difference_in_G(figsize=(8,2)):
+    """
+    Plot the visual for the formula A_g(a,b) = G_0(b) = G_0(a)
+    for the function g(x) = 0.5*x
+    """
+    def g(x):
+        return 0.5 * x
+    fig = plt.figure(figsize=figsize)
+    gs = gridspec.GridSpec(1, 5, width_ratios=[0.25, 0.15, 0.25, 0.1, 0.25]) 
+    # A_g(2,6)
+    ax0 = fig.add_subplot(gs[0])
+    plot_integral(g, a=2, b=6, xlim=[0,8], flabel="g", ax=ax0)
+    ax0.text(4, 0.5, "$A_g(2,\\!6)$", ha="center", fontsize="large");
+    ax0.set_xlabel(None)
+    ax0.set_xticks([0,2,4,6,8])
+    ax0.set_yticks([0,1,2,3,4])
+    # =
+    axEQ = fig.add_subplot(gs[1])
+    axEQ.text(0.3, 0.4, r"$=$", size=20, color="black")
+    axEQ.get_xaxis().set_visible(False)
+    axEQ.get_yaxis().set_visible(False)
+    axEQ.spines[['right', 'top',"bottom", "left"]].set_visible(False)
+    # G_0(6)
+    ax1 = fig.add_subplot(gs[2])
+    plot_integral(g, a=0, b=6, xlim=[0,8], flabel="g", ax=ax1)
+    ax1.text(4, 0.5, "$G_0(6)$", ha="center", fontsize="large");
+    ax1.set_xticks([0,2,4,6,8])
+    ax1.set_yticklabels([])
+    ax1.set_ylabel(None)
+    ax1.set_xlabel(None)
+    # -
+    axMINUS = fig.add_subplot(gs[3])
+    axMINUS.text(0.25, 0.4, r"$-$", size=20, color="black")
+    axMINUS.get_xaxis().set_visible(False)
+    axMINUS.get_yaxis().set_visible(False)
+    axMINUS.spines[['right', 'top',"bottom", "left"]].set_visible(False)
+    # G_0(2)
+    ax2 = fig.add_subplot(gs[4])
+    plot_integral(g, a=0, b=2, xlim=[0,8], flabel="g", ax=ax2)
+    ax2.text(3, 0.5, "$G_0(2)$", ha="left", fontsize="large");
+    ax2.arrow(3, 0.5, -1.6, -0.2, color="black") # head_width=.1, head_length=.1)
+    # ax2.text(1, 0.06, "$G_0(2)$", ha="center") #, fontsize="small");
+    ax2.set_xticks([0,2,4,6,8])
+    ax2.set_yticklabels([])
+    ax2.set_ylabel(None)
+    ax2.set_xlabel(None)
+    return fig
+
+
 def plot_slices_through_paraboloid(direction="x", xmax=2.01, ymax=4.02,
                                    ngrid=400, fig=None):
     """
@@ -824,3 +876,136 @@ def plot_slices_through_paraboloid(direction="x", xmax=2.01, ymax=4.02,
     )
 
     return ax
+
+
+
+def plot_point_charge_field(elev=20, azim=40, grid_lim=1.5, n_points=6):
+    """
+    Plot an E vector field around a point charge at the origin.
+    Custom logic to make the plot more readable:
+    - compressed grid near origin
+    - gentle magnitude scaling
+    - view-dependent filtering of short arrows
+    """
+    from mpl_toolkits.mplot3d import proj3d
+    from matplotlib.patches import FancyArrowPatch
+
+    class Arrow3D(FancyArrowPatch):
+        """
+        A 3D arrow used to represent vectors in 3D.
+        xs, ys, zs are length-2 lists: [start, end].
+        """
+        def __init__(self, xs, ys, zs, *args, **kwargs):
+            super().__init__((0, 0), (0, 0), *args, **kwargs)
+            self._verts3d = xs, ys, zs
+
+        def draw(self, renderer):
+            xs3d, ys3d, zs3d = self._verts3d
+            x2d, y2d, _ = proj3d.proj_transform(
+                xs3d, ys3d, zs3d, self.axes.get_proj()
+            )
+            self.set_positions((x2d[0], y2d[0]), (x2d[1], y2d[1]))
+            super().draw(renderer)
+
+        def do_3d_projection(self, renderer=None):
+            xs3d, ys3d, zs3d = self._verts3d
+            return float(np.mean(zs3d))
+        
+    # ------------------------------------------------------------
+    # compressed grid → innermost points closer to origin
+    # ------------------------------------------------------------
+    u = np.linspace(-1, 1, n_points)
+    coords = grid_lim * np.sign(u) * (np.abs(u)**1.5)
+
+    X, Y, Z = np.meshgrid(coords, coords, coords)
+
+    # radial distance
+    R = np.sqrt(X**2 + Y**2 + Z**2)
+    R_safe = np.where(R < 1e-9, 1e-9, R)
+
+    # unit direction
+    Ex = X / R_safe
+    Ey = Y / R_safe
+    Ez = Z / R_safe
+
+    # gentle scaling
+    S = 1 / (1 + 2 * R_safe**2)
+    Ex *= S
+    Ey *= S
+    Ez *= S
+
+    # flatten for filtering
+    x0 = X.flatten()
+    y0 = Y.flatten()
+    z0 = Z.flatten()
+    dx = Ex.flatten()
+    dy = Ey.flatten()
+    dz = Ez.flatten()
+
+    # arrow lengths
+    L = np.sqrt(dx**2 + dy**2 + dz**2)
+
+    # ------------------------------------------------------------
+    # view-dependent filtering (drop short front/back arrows)
+    # ------------------------------------------------------------
+    phi = np.deg2rad(elev)
+    theta = np.deg2rad(azim)
+
+    # approximate view direction vector
+    v = np.array([
+        np.cos(phi) * np.cos(theta),
+        np.cos(phi) * np.sin(theta),
+        np.sin(phi),
+    ])
+
+    # position along view vector
+    d = x0 * v[0] + y0 * v[1] + z0 * v[2]
+
+    # thresholds
+    L_thresh = np.quantile(L, 0.4)   # bottom 40% = short
+    d_front  = np.quantile(d, 0.7)   # closest ~30%
+    d_back   = np.quantile(d, 0.3)   # farthest ~30%
+
+    is_short = L < L_thresh
+    is_front = d > d_front
+    is_back  = d < d_back
+
+    # drop short arrows both in front & back
+    keep = ~(is_short & (is_front | is_back))
+
+    x0 = x0[keep]
+    y0 = y0[keep]
+    z0 = z0[keep]
+    dx = dx[keep]
+    dy = dy[keep]
+    dz = dz[keep]
+
+    # ------------------------------------------------------------
+    # plot arrows
+    # ------------------------------------------------------------
+    fig = plt.figure(figsize=(7, 6))
+    ax = fig.add_subplot(111, projection="3d")
+
+    for (xs, ys, zs, ddx, ddy, ddz) in zip(x0, y0, z0, dx, dy, dz):
+        arrow = Arrow3D(
+            [xs, xs + ddx], [ys, ys + ddy], [zs, zs + ddz],
+            mutation_scale=12,
+            lw=2.2,
+            arrowstyle="-|>",
+            color="C0",
+        )
+        ax.add_artist(arrow)
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+    ax.set_xlim(-grid_lim, grid_lim)
+    ax.set_ylim(-grid_lim, grid_lim)
+    ax.set_zlim(-grid_lim, grid_lim)
+    ax.view_init(elev=elev, azim=azim)
+
+    plt.tight_layout()
+
+    return ax
+

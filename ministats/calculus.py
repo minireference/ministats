@@ -83,7 +83,7 @@ def plot_integral(f, a=1, b=2, xlim=[0,5], flabel="f", ax=None, autolabel=False)
     ax.vlines([a], ymin=0, ymax=f(a))
     ax.vlines([b], ymin=0, ymax=f(b))
     if autolabel:
-        Alabel = f"$A_{{{flabel}}}({a},{b})$"
+        Alabel = f"$A_{{{flabel}}}({a},\\!{b})$"
         ax.text((a+b)/2, 0.4*f((a+b)/2), Alabel, ha="center", fontsize="large");
     return ax
 
