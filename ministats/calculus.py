@@ -121,19 +121,16 @@ def plot_slope(f, x, delta=0, xlim=[0,5], ylim=None, ax=None):
     xs = np.linspace(*xlim, 1000)
     fxs = np.array([f(x) for x in xs])
     ax = sns.lineplot(x=xs, y=fxs, ax=ax, color="C0", label="$f(x)=x^2$")
-    
     # point at x
     ax.plot(x, f(x), marker='o', markersize=2, color='red')
     ax.text(x-0.1, f(x)-0.2, f"$({x},f({x}))$",
             ha="right", va="bottom", fontsize="small")
-    
     # Tangent line
     if delta == 0:
         dx = 1e-9
         dfdx = (f(x+dx) - f(x)) / dx
         T1xs = f(x) + dfdx*(xs - x)
         sns.lineplot(x=xs, y=T1xs, ax=ax, color="red", linewidth=0.6)
-
     # Average slope line
     else:
         y0 = f(x)
@@ -144,26 +141,22 @@ def plot_slope(f, x, delta=0, xlim=[0,5], ylim=None, ax=None):
         mstr = f"{m:.3f}".rstrip("0").rstrip(".")
         bstr = f"{b:.3f}".rstrip("0").rstrip(".")
         sns.lineplot(x=xs, y=yxs, ax=ax, color="red", linewidth=0.6, label=f"$y = {mstr}x{bstr}$")
-    
         # point at x+delta
         ax.plot(x+delta, f(x+delta), marker='o', markersize=2, color='red')
         x_plus_delta = f"{(x+delta):.3f}".rstrip("0").rstrip(".")
         ax.text(x+delta+0.1, f(x+delta)+0.3, f"$({x_plus_delta},f({x_plus_delta}))$",
                 ha="right", va="bottom", fontsize="small")
-
         # run = delta
         fontsize = "small" if delta > 0.5 else "x-small"
         ax.plot([x, x + delta], [y0, y0], color="black", linewidth=0.5)
         ax.text(x + delta/2, y0 - 0.2, f"$\\Delta x$={delta}", ha="center", va="top", fontsize=fontsize)
-
         # rise = f(x+delta) - f(x)
         ax.plot([x + delta, x + delta], [y0, y1], color="black", linewidth=0.5)
         risestr = f"{(y1-y0):.3f}".rstrip("0").rstrip(".")
         ax.text(x + delta + 0.05, (y0 + y1)/2, f"$\\Delta y$={risestr}", ha="left", va="center", fontsize=fontsize)
-
+    ax.set_xlim(*xlim)
     if ylim:
         ax.set_ylim(*ylim)
-
     return ax
 
 
