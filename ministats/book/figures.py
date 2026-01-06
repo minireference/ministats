@@ -763,11 +763,13 @@ def plot_counties(radon, idata_cp=None, idata_np=None, idata_pp=None, idata_pp2=
 # CALCULUS TUTORIAL
 ################################################################################
 
-def integral_as_difference_in_G(figsize=(8,2)):
+def integral_as_difference_in_G(flabel="g", figsize=(8,2)):
     """
-    Plot the visual for the formula A_g(a,b) = G_0(b) = G_0(a)
-    for the function g(x) = 0.5*x
+    Plot the visual for the formula A_f(a,b) = F_0(b) = F_0(a)
+    for the function f(x) = 0.5*x
     """
+    flabel = flabel.lower()
+    Flabel = flabel.upper()
     def g(x):
         return 0.5 * x
     fig = plt.figure(figsize=figsize)
@@ -775,7 +777,7 @@ def integral_as_difference_in_G(figsize=(8,2)):
     # A_g(2,6)
     ax0 = fig.add_subplot(gs[0])
     plot_integral(g, a=2, b=6, xlim=[0,8], flabel="g", ax=ax0)
-    ax0.text(4, 0.5, "$A_g(2,\\!6)$", ha="center", fontsize="large");
+    ax0.text(4, 0.5, f"$A_{flabel}(2,\\!6)$", ha="center", fontsize="large");
     ax0.set_xlabel(None)
     ax0.set_xticks([0,2,4,6,8])
     ax0.set_yticks([0,1,2,3,4])
@@ -788,7 +790,7 @@ def integral_as_difference_in_G(figsize=(8,2)):
     # G_0(6)
     ax1 = fig.add_subplot(gs[2])
     plot_integral(g, a=0, b=6, xlim=[0,8], flabel="g", ax=ax1)
-    ax1.text(4, 0.5, "$G_0(6)$", ha="center", fontsize="large");
+    ax1.text(4, 0.5, f"${Flabel}_0(6)$", ha="center", fontsize="large");
     ax1.set_xticks([0,2,4,6,8])
     ax1.set_yticklabels([])
     ax1.set_ylabel(None)
@@ -802,9 +804,8 @@ def integral_as_difference_in_G(figsize=(8,2)):
     # G_0(2)
     ax2 = fig.add_subplot(gs[4])
     plot_integral(g, a=0, b=2, xlim=[0,8], flabel="g", ax=ax2)
-    ax2.text(3, 0.5, "$G_0(2)$", ha="left", fontsize="large");
-    ax2.arrow(3, 0.5, -1.6, -0.2, color="black") # head_width=.1, head_length=.1)
-    # ax2.text(1, 0.06, "$G_0(2)$", ha="center") #, fontsize="small");
+    ax2.text(3, 0.5, f"${Flabel}_0(2)$", ha="left", fontsize="large");
+    ax2.arrow(3, 0.5, -1.6, -0.2, color="black")
     ax2.set_xticks([0,2,4,6,8])
     ax2.set_yticklabels([])
     ax2.set_ylabel(None)

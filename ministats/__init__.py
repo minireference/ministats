@@ -13,6 +13,10 @@ from .bayes import (
     calc_dmeans_stats,
     plot_dmeans_stats,
 )
+from .calculus import (
+    plot_func,
+    plot_integral,
+)
 
 from .confidence_intervals import (
     ci_mean,
