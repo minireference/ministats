@@ -45,10 +45,10 @@ def plot_seq(ak, start=0, stop=10, label="$a_k$", ax=None):
 def differentiate(f, x, delta=1e-9):
     """
     Compute the derivative of the function `f` at `x`
-    using the rise-over-run calculation for run `delta`.
+    using a slope calculation for very short `delta`.
     """
     df = f(x+delta) - f(x)
-    dx = delta
+    dx = (x + delta) - x
     return df / dx
 
 
@@ -121,16 +121,17 @@ def plot_slope(f, x, delta=0, xlim=[0,5], ylim=None, ax=None):
     xs = np.linspace(*xlim, 1000)
     fxs = np.array([f(x) for x in xs])
     ax = sns.lineplot(x=xs, y=fxs, ax=ax, color="C0", label="$f(x)=x^2$")
-    # point at x
-    ax.plot(x, f(x), marker='o', markersize=2, color='red')
-    ax.text(x-0.1, f(x)-0.2, f"$({x},f({x}))$",
-            ha="right", va="bottom", fontsize="small")
     # Tangent line
     if delta == 0:
         dx = 1e-9
         dfdx = (f(x+dx) - f(x)) / dx
         T1xs = f(x) + dfdx*(xs - x)
-        sns.lineplot(x=xs, y=T1xs, ax=ax, color="red", linewidth=0.6)
+        ax = sns.lineplot(x=xs, y=T1xs, ax=ax, color="red", linewidth=0.6)
+        # point at x
+        ax.plot(x, f(x), marker='o', markersize=2, color='red')
+        dfdxstr = f"{dfdx:.3f}".rstrip("0").rstrip(".")
+        halign = "right" if dfdx > 0 else "left"
+        ax.text(x, f(x)+0.2, f"$f'({x})={dfdxstr}$", ha=halign, va="bottom", fontsize="small")
     # Average slope line
     else:
         y0 = f(x)
@@ -141,6 +142,10 @@ def plot_slope(f, x, delta=0, xlim=[0,5], ylim=None, ax=None):
         mstr = f"{m:.3f}".rstrip("0").rstrip(".")
         bstr = f"{b:.3f}".rstrip("0").rstrip(".")
         sns.lineplot(x=xs, y=yxs, ax=ax, color="red", linewidth=0.6, label=f"$y = {mstr}x{bstr}$")
+        # point at x
+        ax.plot(x, f(x), marker='o', markersize=2, color='red')
+        ax.text(x-0.1, f(x)-0.2, f"$({x},f({x}))$",
+                ha="right", va="bottom", fontsize="small")
         # point at x+delta
         ax.plot(x+delta, f(x+delta), marker='o', markersize=2, color='red')
         x_plus_delta = f"{(x+delta):.3f}".rstrip("0").rstrip(".")
