@@ -96,7 +96,7 @@ def plot_limit(f, xlim=[0,5], eps=0.00001, ylim=None, ax=None):
 
 
 def plot_ellipse(ax, x, y, width, height, c="C4", lw=0.6,
-                 label=None, lx=0, ly=0, ha="left", va="center"):
+                 label=None, lx=0, ly=0, ha="left", va="center", fontsize="small"):
     """
     Add to `ax` an ellipse centered at `(x,y)` of size `(width,height)`,
     and the optional text `label` at `(lx,ly)` with `ha`, `va` alignments.
@@ -106,7 +106,7 @@ def plot_ellipse(ax, x, y, width, height, c="C4", lw=0.6,
                       edgecolor=c, linewidth=lw)
     ax.add_patch(ellipse)
     if label:
-        ax.text(lx, ly, label, ha=ha, va=va)
+        ax.text(lx, ly, label, ha=ha, va=va, fontsize=fontsize)
     return ax
 
 
