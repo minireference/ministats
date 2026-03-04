@@ -20,7 +20,7 @@ requirements = [
     "statsmodels>=0.14.1",
     "bambi==0.15.0",    # pinned because of https://github.com/pymc-devs/pymc/issues/7978
     "pymc==5.23.0",     # pinned becasue of https://github.com/pymc-devs/pymc/issues/7978
-    "arviz",
+    "arviz<1.0",
     "pingouin>=0.5.5",
 ]
 
