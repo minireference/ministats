@@ -68,7 +68,7 @@ def default_labeler(params, params_to_latex):
     return label
 
 
-def savefigure(obj, filename, tight_layout_kwargs=None):
+def savefigure(obj, filename, tight_layout_kwargs=None, savefig_kwargs=None):
     """
     Save the figure associated with `obj` (axes or figure).
     Assumes `filename` is relative path to pdf to save to,
@@ -91,15 +91,19 @@ def savefigure(obj, filename, tight_layout_kwargs=None):
     else:
         fig.tight_layout()
 
+    # high-resolution for print, tight bbox, and no padding
+    the_savefig_kwargs = dict(dpi=300, bbox_inches="tight", pad_inches=0)
+    if savefig_kwargs:
+        the_savefig_kwargs.update(savefig_kwargs)
+
     # save as PDF
-    fig.savefig(filename, dpi=300, bbox_inches="tight", pad_inches=0)
+    fig.savefig(filename, **the_savefig_kwargs)
     print("Saved figure to", filename)
 
     # save as PNG
     filename2 = filename.replace(".pdf", ".png")
-    fig.savefig(filename2, dpi=300, bbox_inches="tight", pad_inches=0)
+    fig.savefig(filename2, **the_savefig_kwargs)
     print("Saved figure to", filename2)
-
 
 
 
