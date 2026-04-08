@@ -12,17 +12,19 @@ with open('HISTORY.md') as history_file:
 
 
 requirements = [
-    "matplotlib>=3.7",
-    "numpy>=1.24",
-    "scipy>=1.6",
-    "pandas>=2",
-    "seaborn>=0.13.2",
-    "statsmodels>=0.14.1",
-    "bambi==0.15.0",    # pinned because of https://github.com/pymc-devs/pymc/issues/7978
-    "pymc==5.23.0",     # pinned becasue of https://github.com/pymc-devs/pymc/issues/7978
+    "numpy<2.4",
+    "scipy==1.17.1",
+    "pandas==3.0.1",
+    "seaborn==0.13.2",
+    "bambi==0.17.2",
+    "pymc==5.28.1",
+    "pytensor==2.38.2",
     "arviz<1.0",
-    "pingouin>=0.5.5",
+    "statsmodels==0.14.6",
+    "matplotlib==3.10.8",
+    "pingouin==0.6.0",
 ]
+
 
 test_requirements = ['pytest>=3', ]
 
