@@ -83,6 +83,13 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
     return ax
 
 
+# Multiple discrete random variables
+################################################################################
+
+# TODO: import plot_jpdf from multiple_RVs.ipynb
+
+
+
 
 # Continuous random variables
 ################################################################################
@@ -234,7 +241,6 @@ def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=Non
 
 # Diagnostic plots (used in Section 2.7 Random variable generation)
 ################################################################################
-
 
 def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, label=None):
     """
