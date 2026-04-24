@@ -83,12 +83,6 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
     return ax
 
 
-# Multiple discrete random variables
-################################################################################
-
-# TODO: import plot_jpdf from multiple_RVs.ipynb
-
-
 
 
 # Continuous random variables
@@ -140,8 +134,135 @@ def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", a=None, b=None, ax=None, t
     return ax
 
 
+# Discrete joint distribution plots
+################################################################################
 
-# Joint distribution plots
+def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
+    """
+    Plot a joint PMF stored in the DataFrame `jpdf` as a 3D stem plot.
+    The random variable names can be specified as the `name` attribute
+    on the `jpdf.index` and `jpdf.columns` indices.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
+    else:
+        fig = ax.figure
+
+    x_labels = list(jpdf.columns)
+    y_labels = list(jpdf.index)
+
+    x_positions = {label: i for i, label in enumerate(x_labels)}
+    y_positions = {label: i for i, label in enumerate(y_labels)}
+
+
+    xs, ys, fXYs = [], [], []
+    for row_label in y_labels:
+        for col_label in x_labels:
+            xs.append(x_positions[col_label])
+            ys.append(y_positions[row_label])
+            fXYs.append(float(jpdf.loc[row_label, col_label]))
+
+    ax.stem(xs, ys, fXYs, basefmt=" ")
+
+    # X-axis = columns
+    ax.set_xticks(range(len(x_labels)))
+    ax.set_xticklabels(x_labels)
+    x_rv_name = jpdf.columns.name
+    ax.set_xlabel(f"${x_rv_name.lower()}$" if x_rv_name else None)
+
+    # Y-axis = index
+    ax.set_yticks(range(len(y_labels)))
+    ax.set_yticklabels(y_labels)
+    y_rv_name = jpdf.index.name
+    ax.set_ylabel(f"${y_rv_name.lower()}$" if y_rv_name else None)
+
+    # Z-axis 
+    if flabel is None:
+        row_name = jpdf.index.name or "Y"
+        col_name = jpdf.columns.name or "X"
+        joint_subscript = col_name + row_name
+        flabel = rf"$f_{{{joint_subscript}}}$"
+    ax.set_zlabel(flabel)    
+    if zmax is None:
+        zmax = 1.2 * np.max(fXYs)
+    ax.set_zlim(0, zmax)
+
+    return ax
+
+
+def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
+                        size_exponent=1.5, cell_fraction=0.7):
+    """
+    Plot a joint PMF stored in the DataFrame `jpdf` as dots of different sizes.
+    We'll plot the rows along the y-axis, and columns on the x-axis.
+    The size of the dots are determined by:
+    - `size_exponent`: contrast in circle sizes.
+    - `cell_fraction`: max size as a fraction of the grid-cell size.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+
+    x_labels = list(jpdf.columns)
+    y_labels = list(jpdf.index)
+
+    x_positions = {label: i for i, label in enumerate(x_labels)}
+    y_positions = {label: i for i, label in enumerate(y_labels)}
+
+    xs, ys, ps = [], [], []
+    for row_label in y_labels:
+        for col_label in x_labels:
+            xs.append(x_positions[col_label])
+            ys.append(y_positions[row_label])
+            ps.append(float(jpdf.loc[row_label, col_label]))
+
+    # X-axis = columns
+    ax.set_xticks(range(len(x_labels)))
+    ax.set_xticklabels(x_labels)
+    ax.set_xlim(-0.5, len(x_labels) - 0.5)
+    x_rv_name = jpdf.columns.name
+    ax.set_xlabel(f"${x_rv_name.lower()}$" if x_rv_name else None)
+
+    # Y-axis = index
+    ax.set_yticks(range(len(y_labels)))
+    ax.set_yticklabels(y_labels)
+    ax.set_ylim(-0.5, len(y_labels) - 0.5)
+    ax.invert_yaxis()
+    y_rv_name = jpdf.index.name
+    ax.set_ylabel(f"${y_rv_name.lower()}$" if y_rv_name else None)
+
+    ax.grid(True, alpha=0.3)
+
+    # Need the renderer to know the axes size on screen
+    fig.canvas.draw()
+
+    # Axes size in points
+    bbox = ax.get_window_extent()
+    ax_width_pts = bbox.width * 72 / fig.dpi
+    ax_height_pts = bbox.height * 72 / fig.dpi
+
+    # Approximate grid-cell size in points
+    cell_width_pts = ax_width_pts / max(len(x_labels), 1)
+    cell_height_pts = ax_height_pts / max(len(y_labels), 1)
+
+    # Safe maximum marker diameter
+    max_diameter_pts = cell_fraction * min(cell_width_pts, cell_height_pts)
+
+    # For circular markers, s is area in points^2
+    max_area = np.pi * (max_diameter_pts / 2) ** 2
+    pmax = max(ps)
+    sizes = [max_area * (p / pmax) ** size_exponent for p in ps]
+    sizes = [0 if s == 0 else s for s in sizes]
+    ax.scatter(xs, ys, s=sizes, linewidths=1)
+
+    return ax
+
+
+
+# Continuous joint distribution plots
 ################################################################################
 
 def get_meshgrid_and_pos(xlims, ylims, ngrid):

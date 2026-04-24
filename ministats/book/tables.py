@@ -5,9 +5,12 @@ import time
 import arviz as az
 from arviz.plots.plot_utils import calculate_point_estimate as calc_point_est
 import bambi as bmb
+from IPython.display import Latex
+import numbers
 import numpy as np
 import pandas as pd
 import pingouin as pg
+import re
 from scipy.stats import norm
 from scipy.stats import ttest_ind
 
@@ -595,3 +598,152 @@ def get_perf_table_coverage(results):
     tableC = tableC.loc[:, new_cols]
     return tableC
 
+
+
+# Discrete joint distribution plots
+################################################################################
+
+def latex_escape_text(s):
+    """
+    Escape text for use inside \\text{...} or \\mathrm{...}.
+    """
+    s = str(s)
+    repl = {
+        "\\": r"\textbackslash{}",
+        "{": r"\{",
+        "}": r"\}",
+        "_": r"\_",
+        "%": r"\%",
+        "&": r"\&",
+        "#": r"\#",
+        "$": r"\$",
+    }
+    return "".join(repl.get(ch, ch) for ch in s)
+
+
+def latex_symbol(x):
+    """
+    Format a random-variable name.
+    Single-letter names are rendered as math variables: T, V, X.
+    Longer names are rendered upright: \\mathrm{Treatment}.
+    """
+    x = str(x)
+    if re.fullmatch(r"[A-Za-z]", x):
+        return x
+    return r"\mathrm{" + latex_escape_text(x) + "}"
+
+
+def latex_level(x):
+    """
+    Format a value/level of a random variable.
+    Numeric levels are rendered directly.
+    Single-letter string levels are rendered as math variables.
+    Longer string levels are rendered as text.
+    """
+    if isinstance(x, numbers.Integral):
+        return str(x)
+    if isinstance(x, numbers.Real):
+        return f"{x:g}"
+    x = str(x)
+    if re.fullmatch(r"[A-Za-z]", x):
+        return x
+    return r"\texttt{" + latex_escape_text(x) + "}"
+
+
+def latex_prob(x, sigfigs=3):
+    """
+    Format probability values with a sensible number of significant figures.
+    """
+    if pd.isna(x):
+        return ""
+    if isinstance(x, numbers.Real):
+        s = f"{x:.{sigfigs}g}"
+        return "0" if s == "-0" else s
+    return str(x)
+
+
+def jpdf_with_margins(jpdf):
+    """
+    Add row and column marginals to the data frame `jpdf`.
+    """
+    row_name = jpdf.index.name or "Y"
+    col_name = jpdf.columns.name or "X"
+    out = jpdf.copy()
+    out[f"f_{row_name}"] = out.sum(axis=1)
+    bottom = out.sum(axis=0)
+    bottom[f"f_{row_name}"] = pd.NA
+    out.loc[f"f_{col_name}"] = bottom
+    return out
+
+
+def joint_pdf_to_array(jpdf, sigfigs=3, flabel=None, margins=False, output="notebook"):
+    """
+    Convert a joint PMF DataFrame into a LaTeX array.
+    If `margins=True` the marginal distributions are computed.
+    output options:
+        "latex"     -> return LaTeX string
+        "notebook"  -> return IPython.display.Latex object
+        "dataframe" -> return regular DataFrame
+    """
+    if output == "dataframe":
+        return jpdf_with_margins(jpdf) if margins else jpdf.copy()
+
+    row_name = jpdf.index.name or "Y"
+    col_name = jpdf.columns.name or "X"
+
+    row_sym = latex_symbol(row_name)
+    col_sym = latex_symbol(col_name)
+
+    if flabel is None:
+        joint_subscript = col_sym + row_sym
+        flabel = rf"f_{{{joint_subscript}}}"
+
+    data = jpdf.copy()
+
+    if margins:
+        row_marginals = data.sum(axis=1)
+        col_marginals = data.sum(axis=0)
+    ncols = len(data.columns)
+
+    if margins:
+        col_spec = "c|" + "c" * ncols + "|c"
+    else:
+        col_spec = "c|" + "c" * ncols
+
+    header_cells = [flabel]
+    header_cells += [
+        rf"{col_sym}={latex_level(col)}"
+        for col in data.columns
+    ]
+
+    if margins:
+        header_cells.append(rf"f_{{{row_sym}}}")
+
+    lines = [
+        "$$",
+        rf"\begin{{array}}{{{col_spec}}}",
+        " & ".join(header_cells) + r" \\",
+        r"\hline",
+    ]
+
+    for idx, row in data.iterrows():
+        row_cells = [rf"{row_sym}={latex_level(idx)}"]
+        row_cells += [latex_prob(val, sigfigs=sigfigs) for val in row]
+        if margins:
+            row_cells.append(latex_prob(row_marginals.loc[idx], sigfigs=sigfigs))
+        lines.append(" & ".join(row_cells) + r" \\")
+
+    if margins:
+        lines.append(r"\hline")
+        bottom_cells = [rf"f_{{{col_sym}}}"]
+        bottom_cells += [
+            latex_prob(col_marginals.loc[col], sigfigs=sigfigs)
+            for col in data.columns
+        ]
+        bottom_cells.append("")
+        lines.append(" & ".join(bottom_cells) + r" \\")
+
+    lines += [r"\end{array}", "$$"]
+    latex = "\n".join(lines)
+
+    return latex if output == "latex" else Latex(latex)
