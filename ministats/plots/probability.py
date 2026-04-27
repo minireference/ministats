@@ -1,3 +1,5 @@
+
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -183,7 +185,10 @@ def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
         col_name = jpdf.columns.name or "X"
         joint_subscript = col_name + row_name
         flabel = rf"$f_{{{joint_subscript}}}$"
-    ax.set_zlabel(flabel)    
+    # OFF due to https://github.com/matplotlib/matplotlib/issues/28117
+    # ax.set_zlabel(flabel)
+    # /OFF.  See workaround in this comment:
+    # github.com/matplotlib/matplotlib/issues/28117#issuecomment-4137120000
     if zmax is None:
         zmax = 1.2 * np.max(fXYs)
     ax.set_zlim(0, zmax)
@@ -191,15 +196,34 @@ def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
     return ax
 
 
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+
 def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
-                        size_exponent=1.5, cell_fraction=0.7):
+                        size_exponent=1.5, cell_fraction=0.7,
+                        highlight=None):
     """
     Plot a joint PMF stored in the DataFrame `jpdf` as dots of different sizes.
     We'll plot the rows along the y-axis, and columns on the x-axis.
+
     The size of the dots are determined by:
     - `size_exponent`: contrast in circle sizes.
     - `cell_fraction`: max size as a fraction of the grid-cell size.
+    A subset of the sample space can be highlighted by passing in
+    a list of values to the `highlight` option:
+    - `highlight=[(col,row), ...]`: highlights individual cells
+    - `highlight=[[(col1,row1), (col2,row2)], ...]`: highlights all
+      calles in a box with coreners (col1,row1) and (col2,row2).
     """
+    # STYLE CONSTANTS
+    HIGHLIGHT_FACECOLOR = "C0"
+    HIGHLIGHT_EDGECOLOR = "black"
+    HIGHLIGHT_ALPHA = 0.25
+    NON_HIGHLIGHT_ALPHA = 0.1
+    HIGHLIGHT_DOT_ALPHA = 1.0
+
     # Setup figure and axes
     if ax is None:
         fig, ax = plt.subplots()
@@ -211,6 +235,25 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
 
     x_positions = {label: i for i, label in enumerate(x_labels)}
     y_positions = {label: i for i, label in enumerate(y_labels)}
+
+    def _axis_pos(key, labels, positions, axis_name):
+        """
+        Resolve key as label first, then as zero-based integer position.
+        """
+        if key in positions:
+            return positions[key]
+        if isinstance(key, (int, np.integer)) and 0 <= key < len(labels):
+            return int(key)
+        raise KeyError(f"{axis_name} key {key!r} is not a label or valid position.")
+
+    def _cell_pos(cell):
+        """
+        Resolve a (col, row) cell to numeric (x, y) plot positions.
+        """
+        col_key, row_key = cell
+        x = _axis_pos(col_key, x_labels, x_positions, "column")
+        y = _axis_pos(row_key, y_labels, y_positions, "row")
+        return x, y
 
     xs, ys, ps = [], [], []
     for row_label in y_labels:
@@ -234,6 +277,62 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
     y_rv_name = jpdf.index.name
     ax.set_ylabel(f"${y_rv_name.lower()}$" if y_rv_name else None)
 
+    # Track which cells are highlighted
+    highlighted_cells = set()
+
+    if highlight is not None:
+        for item in highlight:
+
+            # Box syntax: [(col1, row1), (col2, row2)]
+            is_box = (
+                isinstance(item, (list, tuple))
+                and len(item) == 2
+                and all(isinstance(corner, (list, tuple)) and len(corner) == 2
+                        for corner in item)
+            )
+
+            if is_box:
+                (col1, row1), (col2, row2) = item
+
+                x1, y1 = _cell_pos((col1, row1))
+                x2, y2 = _cell_pos((col2, row2))
+
+                xmin_i, xmax_i = sorted([x1, x2])
+                ymin_i, ymax_i = sorted([y1, y2])
+
+                for x in range(xmin_i, xmax_i + 1):
+                    for y in range(ymin_i, ymax_i + 1):
+                        highlighted_cells.add((x, y))
+
+                rect = Rectangle(
+                    (xmin_i - 0.5, ymin_i - 0.5),
+                    xmax_i - xmin_i + 1,
+                    ymax_i - ymin_i + 1,
+                    facecolor=HIGHLIGHT_FACECOLOR,
+                    edgecolor=HIGHLIGHT_EDGECOLOR,
+                    alpha=HIGHLIGHT_ALPHA,
+                    linewidth=1.5,
+                    zorder=0,
+                )
+                ax.add_patch(rect)
+
+            # Cell syntax: (col, row)
+            else:
+                x, y = _cell_pos(item)
+                highlighted_cells.add((x, y))
+
+                rect = Rectangle(
+                    (x - 0.5, y - 0.5),
+                    1,
+                    1,
+                    facecolor=HIGHLIGHT_FACECOLOR,
+                    edgecolor=HIGHLIGHT_EDGECOLOR,
+                    alpha=HIGHLIGHT_ALPHA,
+                    linewidth=1.5,
+                    zorder=0,
+                )
+                ax.add_patch(rect)
+
     ax.grid(True, alpha=0.3)
 
     # Need the renderer to know the axes size on screen
@@ -254,9 +353,34 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
     # For circular markers, s is area in points^2
     max_area = np.pi * (max_diameter_pts / 2) ** 2
     pmax = max(ps)
-    sizes = [max_area * (p / pmax) ** size_exponent for p in ps]
-    sizes = [0 if s == 0 else s for s in sizes]
-    ax.scatter(xs, ys, s=sizes, linewidths=1)
+
+    if pmax > 0:
+        sizes = [max_area * (p / pmax) ** size_exponent for p in ps]
+    else:
+        sizes = [0 for _ in ps]
+
+    if highlighted_cells:
+        xs_hi, ys_hi, s_hi = [], [], []
+        xs_lo, ys_lo, s_lo = [], [], []
+
+        for x, y, s in zip(xs, ys, sizes):
+            if (x, y) in highlighted_cells:
+                xs_hi.append(x)
+                ys_hi.append(y)
+                s_hi.append(s)
+            else:
+                xs_lo.append(x)
+                ys_lo.append(y)
+                s_lo.append(s)
+
+        # Non-highlighted dots: pale
+        ax.scatter(xs_lo, ys_lo, s=s_lo, linewidths=1, color="C0", alpha=NON_HIGHLIGHT_ALPHA, zorder=2)
+
+        # Highlighted dots: full opacity
+        ax.scatter(xs_hi, ys_hi, s=s_hi, linewidths=1, color="C0", alpha=HIGHLIGHT_DOT_ALPHA, zorder=3)
+
+    else:
+        ax.scatter(xs, ys, s=sizes, linewidths=1, zorder=2)
 
     return ax
 
