@@ -1,5 +1,6 @@
 
 from matplotlib.patches import Rectangle
+from matplotlib import gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -50,6 +51,24 @@ def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label
     return ax
 
 
+def plot_pmf_series(fX, rv_name="X", ax=None, orientation="vertical"):
+    """
+    Plot the PMF of the discrete RV stored in the pandas series `fX`.
+    """
+    # Setup figure and axes
+    if ax is None:
+        _, ax = plt.subplots()    
+    x_labels = list(fX.index)
+    xs = range(len(x_labels))
+    fXs = fX.values
+    ax.stem(xs, fXs, basefmt=" ", orientation=orientation)
+    ax.set_xticks(range(len(x_labels)))
+    ax.set_xticklabels(x_labels)    
+    ax.set_xlabel("$" + rv_name.lower() + "$")
+    ax.set_ylabel(f"$f_{{{rv_name}}}$")
+    return ax
+
+
 def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwargs):
     """
     Plot the CDF of the random variable `rv` (discrete or continuous) over the `xlims`.
@@ -85,55 +104,6 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
     return ax
 
 
-
-
-# Continuous random variables
-################################################################################
-
-def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", a=None, b=None, ax=None, title=None, **kwargs):
-    """
-    Plot the PDF of the continuous random variable `rv` over the `xlims`.
-    """
-    # Setup figure and axes
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = ax.figure
-
-    # Compute limits of plot
-    if xlims:
-        xmin, xmax = xlims
-    else:
-        xmin, xmax = rv.ppf(0.000000001), rv.ppf(0.99999)
-    xs = np.linspace(xmin, xmax, 1000)
-
-    # Compute the probability density function and plot it
-    fXs = rv.pdf(xs)
-    sns.lineplot(x=xs, y=fXs, ax=ax, **kwargs)
-    ax.set_xlabel("$" + rv_name.lower() + "$")
-    ax.set_ylabel(f"$f_{{{rv_name}}}$")
-    if ylims:
-        ax.set_ylim(*ylims)
-    
-    if a or b:
-        # Highlight the area under fX between x=a and x=b
-        if a is None:
-            a = rv.support()[0]
-        if b is None:
-            b = rv.support()[1]
-
-        mask = (xs > a) & (xs < b)
-        ax.fill_between(xs[mask], y1=fXs[mask], alpha=0.2)
-        ax.vlines([a], ymin=0, ymax=rv.pdf(a), linestyle="-", alpha=0.5)
-        ax.vlines([b], ymin=0, ymax=rv.pdf(b), linestyle="-", alpha=0.5)
-
-    if title and title.lower() == "auto":
-        title = "Probability density function of the random variable " + rv.dist.name + str(rv.args)
-    if title:
-        ax.set_title(title, y=0, pad=-30)
-
-    # return the axes
-    return ax
 
 
 # Discrete joint distribution plots
@@ -383,6 +353,171 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
         ax.scatter(xs, ys, s=sizes, linewidths=1, zorder=2)
 
     return ax
+
+
+
+def plot_joint_pmf_and_marginals(jpdfXY, fig=None):
+    """
+    Plot the joint PMF `f_XY` and it marginals `f_X` and `f_Y`.
+    """
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(7,4))
+
+    # Figure grid
+    gs = gridspec.GridSpec(2, 2, width_ratios=[6,1], height_ratios=[4,1], hspace=0.1, wspace=0.2)
+
+    # Dot plot of f_XY
+    ax = plt.subplot(gs[0,0])
+    ax = plot_joint_pdf_dots(jpdfXY, ax=ax)
+    ax.tick_params(labelbottom=False)
+    ax.set_xlabel(None)
+    ax.set_ylabel(None)
+    ax.text(-0.48, -0.45, "$f_{XY}$", va="top", fontsize="x-large")
+
+    # The marginal f_X (bottom)
+    fX = jpdfXY.sum(axis=0)
+    axb = plt.subplot(gs[1,0], sharex=ax, frameon=False)
+    plot_pmf_series(fX, rv_name="X", ax=axb)
+    axb.tick_params(labelleft=False)
+    axb.set_yticks([0,0.1,0.2,0.3])
+    axb.set_yticklabels([0,0.1,0.2,0.3])
+    axb.set_xlabel(None)
+    axb.set_ylabel(None)
+    axb.text(-0.48, 0.05, "$f_{X}$", fontsize="x-large")
+
+    # The marginal f_Y (right)
+    fY = jpdfXY.sum(axis=1)
+    axr = plt.subplot(gs[0,1], sharey=ax, frameon=False)
+    plot_pmf_series(fY, rv_name="Y", ax=axr, orientation="horizontal")
+    axr.set_xlim(0,0.4)
+    axr.set_xlabel(None)
+    axr.set_ylabel(None)
+    axr.set_xticks([0,0.1,0.2,0.3,0.4])
+    axr.tick_params(labelbottom=False)
+    axr.text(0.01, -0.4, "$f_{Y}$", rotation=270, fontsize="x-large")
+
+    return fig
+
+
+
+def plot_joint_pmf_and_conditional(jpdfXY, given="y", fig=None):
+    """
+    Plot the joint PMF `f_XY` and the conditional `f_X|Y`.
+    """
+    given = given.lower()
+    assert given in ["x", "y"], "must specify given='x' or given='y'."
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(7.2,3))
+
+    # Figure grid
+    axs = fig.subplots(ncols=2, nrows=2, width_ratios=[4,3], height_ratios=[1,1],
+                       gridspec_kw=dict(hspace=0.7, wspace=0.4))
+    gs = axs[0][0].get_gridspec()
+    # Remove the axes (we'll recreate manually below)
+    axs[0][0].remove()
+    axs[1][0].remove()
+    axs[0][1].remove()
+    axs[1][1].remove()
+
+    # (a) Dot plot of f_XY
+    ax = fig.add_subplot(gs[0:, 0])
+    if given == "y":
+        plot_joint_pdf_dots(jpdfXY, ax=ax, highlight=[[(1,"b"),(5,"b")]])
+    else:
+        plot_joint_pdf_dots(jpdfXY, ax=ax, highlight=[[(5,"a"),(5,"d")]])
+    ax.set_xlabel("$x$", fontsize=7)
+    ax.set_ylabel("$y$", fontsize=7)
+    ax.set_title("(a) Joint probability mass function $f_{XY}$", fontsize=12)
+
+    # (b) Slice through f_XY at y=b  (top right)
+    ax1 = plt.subplot(gs[0,1], frameon=False)
+    if given == "y":
+        fXY_at_y = jpdfXY.loc["b",:]
+        plot_pmf_series(fXY_at_y, rv_name="XY", ax=ax1)
+        ax1.set_title("(b) Horizontal slice though $f_{XY}$ at $y=b$           ", fontsize=11)
+        ax1.set_yticks([0,0.02,0.04,0.06,0.08,0.1,0.12])
+    else:
+        fXY_at_x = jpdfXY.loc[:,5]
+        plot_pmf_series(fXY_at_x, rv_name="XY", ax=ax1)
+        ax1.set_title("(b) Vertical slice though $f_{XY}$ at $x=5$           ", fontsize=11)
+        ax1.set_yticks([0,0.02,0.04,0.06])
+    ax1.set_xlabel(None)
+
+    # Arrow between (a) and (b)
+    arrowprops2 = dict(facecolor='C0', shrink=0.005, width=4, headwidth=10, headlength=12,
+                       connectionstyle="arc3,rad=0.1")
+    ax.annotate("", xytext=(4.5, 1), xy=(5.5, 0.6),  arrowprops=arrowprops2, annotation_clip=False)
+
+    # Conditional f_X|Y at y=b (bottom right)
+    ax2 = plt.subplot(gs[1,1], frameon=False, sharex=ax1)
+    if given == "y":
+        fYgivenX = jpdfXY.loc["b",:] / jpdfXY.loc["b",:].sum()
+        plot_pmf_series(fYgivenX, rv_name="X|Y", ax=ax2)
+        ax2.set_title("(c) Conditional distribution $f_{X|Y}(x|b)$", fontsize=11, loc="right")
+        ax2.set_xlabel("$x$", fontsize=7)
+        ax2.set_yticks([0,0.1,0.2,0.3,0.4])
+    else:
+        fXgivenY = jpdfXY.loc[:,5] / jpdfXY.loc[:,5].sum()
+        plot_pmf_series(fXgivenY, rv_name="Y|X", ax=ax2)
+        ax2.set_title("(c) Conditional distribution $f_{Y|X}(y|5)$", fontsize=11, loc="right")
+        ax2.set_xlabel("$y$", fontsize=7)
+        ax2.set_yticks([0,0.1,0.2,0.3,0.4,0.5])
+
+    return fig
+
+
+
+
+# Continuous random variables
+################################################################################
+
+def plot_pdf(rv, xlims=None, ylims=None, rv_name="X", a=None, b=None, ax=None, title=None, **kwargs):
+    """
+    Plot the PDF of the continuous random variable `rv` over the `xlims`.
+    """
+    # Setup figure and axes
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+
+    # Compute limits of plot
+    if xlims:
+        xmin, xmax = xlims
+    else:
+        xmin, xmax = rv.ppf(0.000000001), rv.ppf(0.99999)
+    xs = np.linspace(xmin, xmax, 1000)
+
+    # Compute the probability density function and plot it
+    fXs = rv.pdf(xs)
+    sns.lineplot(x=xs, y=fXs, ax=ax, **kwargs)
+    ax.set_xlabel("$" + rv_name.lower() + "$")
+    ax.set_ylabel(f"$f_{{{rv_name}}}$")
+    if ylims:
+        ax.set_ylim(*ylims)
+    
+    if a or b:
+        # Highlight the area under fX between x=a and x=b
+        if a is None:
+            a = rv.support()[0]
+        if b is None:
+            b = rv.support()[1]
+
+        mask = (xs > a) & (xs < b)
+        ax.fill_between(xs[mask], y1=fXs[mask], alpha=0.2)
+        ax.vlines([a], ymin=0, ymax=rv.pdf(a), linestyle="-", alpha=0.5)
+        ax.vlines([b], ymin=0, ymax=rv.pdf(b), linestyle="-", alpha=0.5)
+
+    if title and title.lower() == "auto":
+        title = "Probability density function of the random variable " + rv.dist.name + str(rv.args)
+    if title:
+        ax.set_title(title, y=0, pad=-30)
+
+    # return the axes
+    return ax
+
 
 
 
