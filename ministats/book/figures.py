@@ -4,6 +4,7 @@ from matplotlib import gridspec
 from matplotlib.collections import PolyCollection
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.integrate import quad
 from scipy.stats.contingency import margins
 from scipy.stats import t as tdist
 import seaborn as sns
@@ -203,7 +204,7 @@ def plot_slices_through_joint_pdf(rvXY, xlims, ylims, xcuts, ngrid=500, fig=None
     ax.add_collection3d(poly, zs=xcuts, zdir='x')
     ax.set_box_aspect((9, 5, 4))
     zmax = 0.06
-    ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel='probability')
+    ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel=None)
     ax.set_xticks(range(4,17,1))
 
     return fig
@@ -249,7 +250,7 @@ def plot_conditional_fYgivenX(rvXY, xlims, ylims, xcuts, ngrid=500, fig=None):
     ax.add_collection3d(poly, zs=xcuts, zdir='x')
     ax.set_box_aspect((9, 5, 4))
     zmax = 0.006
-    ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel='probability');
+    ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel=None);
     ax.set_xticks(range(4, 17, 1))
 
     return fig
@@ -261,15 +262,15 @@ def plot_conditional_fYgivenX(rvXY, xlims, ylims, xcuts, ngrid=500, fig=None):
 ################################################################################
 
 
-def bulk_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
+def bulk_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[2,3], fig=None):
     """
     Print a 1x3 panel figure highlighting the probability mass that lies within
     `ns` standard deviations from the mean of the random variable `rvX`.
     """
     if fig is None:
-        fig, axs = plt.subplots(1, 3, figsize=(9.2,2), sharey=True)
+        fig, axs = plt.subplots(1, len(ns), figsize=(7.5,2), sharey=True)
     else:
-        axs = fig.subplots(1, 3, sharey=True)
+        axs = fig.subplots(1, len(ns), sharey=True)
 
     muX = rvX.mean()    # mean of the random variable rvX
     sigmaX = rvX.std()  # standard deviation of rvX
@@ -280,10 +281,13 @@ def bulk_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
         letter = ["a", "b", "c"][i]
         mu = "\\mu_" + rv_name
         sigma = "\\sigma_" + rv_name
+        I_n = [muX - n*sigmaX, muX + n*sigmaX]
+        p_n = quad(rvX.pdf, I_n[0], I_n[1])[0]
         if n == 1:
             title = f"({letter}) Pr($\\{{{mu}-{sigma} \\leq {rv_name} \\leq {mu}+{sigma}\\}}$)"
         else:
             title = f"({letter}) Pr($\\{{{mu}-{n}{sigma} \\leq {rv_name} \\leq {mu}+{n}{sigma}\\}}$)"
+        title += f" = {p_n:.3f}"
         calc_prob_and_plot(rvX, *bulk_interval, xlims=xlims, ax=ax, title=title)
         if xticks:
             ax.set_xticks(xticks)
@@ -292,15 +296,15 @@ def bulk_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
 
 
 
-def tails_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
+def tails_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[2,3], fig=None):
     """
     Print a 1x3 panel figure highlighting the probability mass that lies within
     `ns` standard deviations from the mean of the random variable `rvX`.
     """
     if fig is None:
-        fig, axs = plt.subplots(1, 3, figsize=(9.2,2), sharey=True)
+        fig, axs = plt.subplots(1, len(ns), figsize=(7.5,2), sharey=True)
     else:
-        axs = fig.subplots(1, 3, sharey=True)
+        axs = fig.subplots(1, len(ns), sharey=True)
 
     muX = rvX.mean()    # mean of the random variable rvX
     sigmaX = rvX.std()  # standard deviation of rvX
@@ -312,10 +316,13 @@ def tails_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[1,2,3], fig=None):
         letter = ["a", "b", "c"][i]
         mu = "\\mu_" + rv_name
         sigma = "\\sigma_" + rv_name
+        I_n = [muX - n*sigmaX, muX + n*sigmaX]
+        p_n = quad(rvX.pdf, I_n[0], I_n[1])[0]
         if n == 1:
             title = f"({letter}) Pr($\\{{{rv_name} \\leq {mu}-{sigma}\\}} \\cup \\{{{rv_name} \\geq {mu}+{sigma}\\}}$)"
         else:
             title = f"({letter}) Pr($\\{{{rv_name} \\leq {mu}-{n}{sigma}\\}} \\cup \\{{{rv_name} \\geq {mu}+{n}{sigma}\\}}$)"
+        title += f" = {(1-p_n):.3f}"
         calc_prob_and_plot_tails(rvX, x_l, x_r, xlims=xlims, ax=ax, title=title)
         if xticks:
             ax.set_xticks(xticks)
@@ -763,8 +770,8 @@ def plot_counties(radon, idata_cp=None, idata_np=None, idata_pp=None, idata_pp2=
 
 def integral_as_difference_in_G(flabel="g", figsize=(8,2)):
     """
-    Plot the visual for the formula A_f(a,b) = F_0(b) = F_0(a)
-    for the function f(x) = 0.5*x
+    Plot the visual for the formula A_g(2,6) = G_0(6) - G_0(2)
+    for the function g(x) = 0.5*x.
     """
     flabel = flabel.lower()
     Flabel = flabel.upper()

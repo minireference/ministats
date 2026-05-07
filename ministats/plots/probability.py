@@ -470,13 +470,17 @@ def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=Non
     fXY = rvXY.pdf(pos)
 
     # Generate the 3D surface plot
-    ax.plot_surface(X, Y, fXY, cmap='Greys', linewidth=0)
+    ax.plot_surface(X, Y, fXY,
+                    color="white", edgecolor="black", shade=False,
+                    linewidth=0.2, rcount=40, ccount=40)
     ax.set_box_aspect((xlims[1]-xlims[0], ylims[1]-ylims[0], 3))
     if viewdict is not None:
         ax.view_init(**viewdict)
+    ax.set_xlim(*xlims)
+    ax.set_ylim(*ylims)
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
-    ax.set_zlabel('$f_{XY}$')
+    # ax.set_zlabel('$f_{XY}$')
     ax.set_zticks([])
 
     return ax

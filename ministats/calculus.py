@@ -178,7 +178,7 @@ def plot_integral(f, a=1, b=2, xlim=[0,5], flabel="f", ax=None, autolabel=False)
     ax = sns.lineplot(x=xs, y=fxs, ax=ax)    
     ax.set_xlim(*xlim)
     ax.set_xlabel("$x$")
-    ax.set_ylabel(f"${flabel}(x)$")
+    ax.set_ylabel(f"${flabel}$")
     # Highlight the area under f(x) between x=a and x=b
     mask = (xs > a) & (xs < b)
     ax.fill_between(xs[mask], y1=fxs[mask], alpha=0.4)

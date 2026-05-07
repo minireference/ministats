@@ -132,7 +132,7 @@ def calc_prob_and_plot(rv, a, b, xlims=None, ax=None, title=None):
     if title is None:
         title = "Probability density for the random variable " + rv.dist.name + str(rv.args) \
                  + " between " + str(a) + " and " + str(b)
-    ax.set_title(title, y=0, pad=-30)
+    ax.set_title(title, fontsize=11)
 
     # 3. highlight the area under pX between x=a and x=b
     mask = (x > a) & (x < b)
@@ -166,7 +166,7 @@ def calc_prob_and_plot_tails(rv, x_l, x_r, xlims=None, ax=None, title=None,
     ax = sns.lineplot(x=x, y=pX, ax=ax, color=color)
     if title is None:
         title = "Tails of the random variable " + rv.dist.name + str(rv.args)
-    ax.set_title(title, y=0, pad=-30)
+    ax.set_title(title, fontsize=11)
 
     # 3. highlight the area under pX for the tails
     mask_l = x < x_l   # left tail
@@ -207,7 +207,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
     x = np.linspace(xmin, xmax, 1000)
     pX = rv.pdf(x)
     sns.lineplot(x=x, y=pX, ax=ax0)
-    ax0.set_title("Probability density function", fontdict={"fontsize":14})
+    ax0.set_title(f"(a) Probability density function $f_{{{rv_name}}}$", fontdict={"fontsize":13})
 
     if b:
         # highlight the area under pX between x=a and x=b
@@ -221,7 +221,7 @@ def plot_pdf_and_cdf(rv, b=None, a=-np.inf, xlims=None, rv_name="X", title=None)
     # 2. plot the CDF
     FX = rv.cdf(x)
     sns.lineplot(x=x, y=FX, ax=ax1)
-    ax1.set_title("Cumulative distribution function", fontdict={"fontsize":14})
+    ax1.set_title(f"(b) Cumulative distribution function $F_{{{rv_name}}}$", fontdict={"fontsize":13})
 
     if b:
         # highlight the point x=b

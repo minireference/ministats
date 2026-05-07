@@ -628,7 +628,7 @@ def latex_symbol(x):
     Longer names are rendered upright: \\mathrm{Treatment}.
     """
     x = str(x)
-    if re.fullmatch(r"[A-Za-z]", x):
+    if re.fullmatch(r"[A-Za-z0-9_]{1,3}", x):
         return x
     return r"\mathrm{" + latex_escape_text(x) + "}"
 
