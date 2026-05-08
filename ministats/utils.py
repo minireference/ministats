@@ -68,7 +68,7 @@ def default_labeler(params, params_to_latex):
     return label
 
 
-def savefigure(obj, filename, tight_layout_kwargs=None, savefig_kwargs=None):
+def savefigure(obj, filename, skip_tight_layout=False, tight_layout_kwargs=None, savefig_kwargs=None):
     """
     Save the figure associated with `obj` (axes or figure).
     Assumes `filename` is relative path to pdf to save to,
@@ -86,10 +86,11 @@ def savefigure(obj, filename, tight_layout_kwargs=None, savefig_kwargs=None):
         raise ValueError("First argument must be Matplotlib figure or axes")
 
     # remove surrounding whitespace as much as possible
-    if tight_layout_kwargs:
-        fig.tight_layout(**tight_layout_kwargs)
-    else:
-        fig.tight_layout()
+    if not skip_tight_layout:
+        if tight_layout_kwargs:
+            fig.tight_layout(**tight_layout_kwargs)
+        else:
+            fig.tight_layout()
 
     # high-resolution for print, tight bbox, and no padding
     the_savefig_kwargs = dict(dpi=300, bbox_inches="tight", pad_inches=0)

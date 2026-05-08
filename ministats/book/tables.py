@@ -662,13 +662,13 @@ def latex_prob(x, sigfigs=3):
     return str(x)
 
 
-def jpdf_with_margins(jpdf):
+def jpmf_with_margins(jpmf):
     """
-    Add row and column marginals to the data frame `jpdf`.
+    Add row and column marginals to the data frame `jpmf`.
     """
-    row_name = jpdf.index.name or "Y"
-    col_name = jpdf.columns.name or "X"
-    out = jpdf.copy()
+    row_name = jpmf.index.name or "Y"
+    col_name = jpmf.columns.name or "X"
+    out = jpmf.copy()
     out[f"f_{row_name}"] = out.sum(axis=1)
     bottom = out.sum(axis=0)
     bottom[f"f_{row_name}"] = pd.NA
@@ -676,7 +676,7 @@ def jpdf_with_margins(jpdf):
     return out
 
 
-def joint_pdf_to_array(jpdf, sigfigs=3, flabel=None, margins=False, output="notebook"):
+def joint_pmf_to_array(jpmf, sigfigs=3, flabel=None, margins=False, output="notebook"):
     """
     Convert a joint PMF DataFrame into a LaTeX array.
     If `margins=True` the marginal distributions are computed.
@@ -686,10 +686,10 @@ def joint_pdf_to_array(jpdf, sigfigs=3, flabel=None, margins=False, output="note
         "dataframe" -> return regular DataFrame
     """
     if output == "dataframe":
-        return jpdf_with_margins(jpdf) if margins else jpdf.copy()
+        return jpmf_with_margins(jpmf) if margins else jpmf.copy()
 
-    row_name = jpdf.index.name or "Y"
-    col_name = jpdf.columns.name or "X"
+    row_name = jpmf.index.name or "Y"
+    col_name = jpmf.columns.name or "X"
 
     row_sym = latex_symbol(row_name)
     col_sym = latex_symbol(col_name)
@@ -698,7 +698,7 @@ def joint_pdf_to_array(jpdf, sigfigs=3, flabel=None, margins=False, output="note
         joint_subscript = col_sym + row_sym
         flabel = rf"f_{{{joint_subscript}}}"
 
-    data = jpdf.copy()
+    data = jpmf.copy()
 
     if margins:
         row_marginals = data.sum(axis=1)

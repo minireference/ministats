@@ -1,4 +1,3 @@
-
 from matplotlib.patches import Rectangle
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
@@ -109,11 +108,11 @@ def plot_cdf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, **kwa
 # Discrete joint distribution plots
 ################################################################################
 
-def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
+def plot_joint_pmf_stems(jpmf, flabel=None, ax=None, zmax=None):
     """
-    Plot a joint PMF stored in the DataFrame `jpdf` as a 3D stem plot.
+    Plot a joint PMF stored in the DataFrame `jpmf` as a 3D stem plot.
     The random variable names can be specified as the `name` attribute
-    on the `jpdf.index` and `jpdf.columns` indices.
+    on the `jpmf.index` and `jpmf.columns` indices.
     """
     # Setup figure and axes
     if ax is None:
@@ -121,8 +120,8 @@ def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
     else:
         fig = ax.figure
 
-    x_labels = list(jpdf.columns)
-    y_labels = list(jpdf.index)
+    x_labels = list(jpmf.columns)
+    y_labels = list(jpmf.index)
 
     x_positions = {label: i for i, label in enumerate(x_labels)}
     y_positions = {label: i for i, label in enumerate(y_labels)}
@@ -133,26 +132,26 @@ def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
         for col_label in x_labels:
             xs.append(x_positions[col_label])
             ys.append(y_positions[row_label])
-            fXYs.append(float(jpdf.loc[row_label, col_label]))
+            fXYs.append(float(jpmf.loc[row_label, col_label]))
 
     ax.stem(xs, ys, fXYs, basefmt=" ")
 
     # X-axis = columns
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
-    x_rv_name = jpdf.columns.name
+    x_rv_name = jpmf.columns.name
     ax.set_xlabel(f"${x_rv_name.lower()}$" if x_rv_name else None)
 
     # Y-axis = index
     ax.set_yticks(range(len(y_labels)))
     ax.set_yticklabels(y_labels)
-    y_rv_name = jpdf.index.name
+    y_rv_name = jpmf.index.name
     ax.set_ylabel(f"${y_rv_name.lower()}$" if y_rv_name else None)
 
     # Z-axis 
     if flabel is None:
-        row_name = jpdf.index.name or "Y"
-        col_name = jpdf.columns.name or "X"
+        row_name = jpmf.index.name or "Y"
+        col_name = jpmf.columns.name or "X"
         joint_subscript = col_name + row_name
         flabel = rf"$f_{{{joint_subscript}}}$"
     # OFF due to https://github.com/matplotlib/matplotlib/issues/28117
@@ -166,26 +165,24 @@ def plot_joint_pdf_stems(jpdf, flabel=None, ax=None, zmax=None):
     return ax
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 
 
-def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
-                        size_exponent=1.5, cell_fraction=0.7,
-                        highlight=None):
+def plot_joint_pmf_balloons(jpmf, flabel="$f_XY$", ax=None,
+                            size_exponent=1.5, cell_fraction=0.7,
+                            highlight=None):
     """
-    Plot a joint PMF stored in the DataFrame `jpdf` as dots of different sizes.
+    Plot the joint PMF in the DataFrame `jpmf` as circles of different sizes.
     We'll plot the rows along the y-axis, and columns on the x-axis.
+    This is called a "balloon plot" or "bubble plot".
 
-    The size of the dots are determined by:
+    The size of the circles are determined by:
     - `size_exponent`: contrast in circle sizes.
     - `cell_fraction`: max size as a fraction of the grid-cell size.
     A subset of the sample space can be highlighted by passing in
     a list of values to the `highlight` option:
     - `highlight=[(col,row), ...]`: highlights individual cells
     - `highlight=[[(col1,row1), (col2,row2)], ...]`: highlights all
-      calles in a box with coreners (col1,row1) and (col2,row2).
+      cells in a box with coreners (col1,row1) and (col2,row2).
     """
     # STYLE CONSTANTS
     HIGHLIGHT_FACECOLOR = "C0"
@@ -200,8 +197,8 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
     else:
         fig = ax.figure
 
-    x_labels = list(jpdf.columns)
-    y_labels = list(jpdf.index)
+    x_labels = list(jpmf.columns)
+    y_labels = list(jpmf.index)
 
     x_positions = {label: i for i, label in enumerate(x_labels)}
     y_positions = {label: i for i, label in enumerate(y_labels)}
@@ -230,13 +227,13 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
         for col_label in x_labels:
             xs.append(x_positions[col_label])
             ys.append(y_positions[row_label])
-            ps.append(float(jpdf.loc[row_label, col_label]))
+            ps.append(float(jpmf.loc[row_label, col_label]))
 
     # X-axis = columns
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)
     ax.set_xlim(-0.5, len(x_labels) - 0.5)
-    x_rv_name = jpdf.columns.name
+    x_rv_name = jpmf.columns.name
     ax.set_xlabel(f"${x_rv_name.lower()}$" if x_rv_name else None)
 
     # Y-axis = index
@@ -244,7 +241,7 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
     ax.set_yticklabels(y_labels)
     ax.set_ylim(-0.5, len(y_labels) - 0.5)
     ax.invert_yaxis()
-    y_rv_name = jpdf.index.name
+    y_rv_name = jpmf.index.name
     ax.set_ylabel(f"${y_rv_name.lower()}$" if y_rv_name else None)
 
     # Track which cells are highlighted
@@ -343,10 +340,10 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
                 ys_lo.append(y)
                 s_lo.append(s)
 
-        # Non-highlighted dots: pale
+        # Non-highlighted circles: pale
         ax.scatter(xs_lo, ys_lo, s=s_lo, linewidths=1, color="C0", alpha=NON_HIGHLIGHT_ALPHA, zorder=2)
 
-        # Highlighted dots: full opacity
+        # Highlighted circles: full opacity
         ax.scatter(xs_hi, ys_hi, s=s_hi, linewidths=1, color="C0", alpha=HIGHLIGHT_DOT_ALPHA, zorder=3)
 
     else:
@@ -356,7 +353,7 @@ def plot_joint_pdf_dots(jpdf, flabel="$f_XY$", ax=None,
 
 
 
-def plot_joint_pmf_and_marginals(jpdfXY, fig=None):
+def plot_joint_pmf_and_marginals(jpmfXY, fig=None):
     """
     Plot the joint PMF `f_XY` and it marginals `f_X` and `f_Y`.
     """
@@ -369,14 +366,14 @@ def plot_joint_pmf_and_marginals(jpdfXY, fig=None):
 
     # Dot plot of f_XY
     ax = plt.subplot(gs[0,0])
-    ax = plot_joint_pdf_dots(jpdfXY, ax=ax)
+    ax = plot_joint_pmf_balloons(jpmfXY, ax=ax)
     ax.tick_params(labelbottom=False)
     ax.set_xlabel(None)
     ax.set_ylabel(None)
     ax.text(-0.48, -0.45, "$f_{XY}$", va="top", fontsize="x-large")
 
     # The marginal f_X (bottom)
-    fX = jpdfXY.sum(axis=0)
+    fX = jpmfXY.sum(axis=0)
     axb = plt.subplot(gs[1,0], sharex=ax, frameon=False)
     plot_pmf_series(fX, rv_name="X", ax=axb)
     axb.tick_params(labelleft=False)
@@ -387,7 +384,7 @@ def plot_joint_pmf_and_marginals(jpdfXY, fig=None):
     axb.text(-0.48, 0.05, "$f_{X}$", fontsize="x-large")
 
     # The marginal f_Y (right)
-    fY = jpdfXY.sum(axis=1)
+    fY = jpmfXY.sum(axis=1)
     axr = plt.subplot(gs[0,1], sharey=ax, frameon=False)
     plot_pmf_series(fY, rv_name="Y", ax=axr, orientation="horizontal")
     axr.set_xlim(0,0.4)
@@ -401,7 +398,7 @@ def plot_joint_pmf_and_marginals(jpdfXY, fig=None):
 
 
 
-def plot_joint_pmf_and_conditional(jpdfXY, given="y", fig=None):
+def plot_joint_pmf_and_conditional(jpmfXY, given="y", fig=None):
     """
     Plot the joint PMF `f_XY` and the conditional `f_X|Y`.
     """
@@ -424,9 +421,9 @@ def plot_joint_pmf_and_conditional(jpdfXY, given="y", fig=None):
     # (a) Dot plot of f_XY
     ax = fig.add_subplot(gs[0:, 0])
     if given == "y":
-        plot_joint_pdf_dots(jpdfXY, ax=ax, highlight=[[(1,"b"),(5,"b")]])
+        plot_joint_pmf_balloons(jpmfXY, ax=ax, highlight=[[(1,"b"),(5,"b")]])
     else:
-        plot_joint_pdf_dots(jpdfXY, ax=ax, highlight=[[(5,"a"),(5,"d")]])
+        plot_joint_pmf_balloons(jpmfXY, ax=ax, highlight=[[(5,"a"),(5,"d")]])
     ax.set_xlabel("$x$", fontsize=7)
     ax.set_ylabel("$y$", fontsize=7)
     ax.set_title("(a) Joint probability mass function $f_{XY}$", fontsize=12)
@@ -434,12 +431,12 @@ def plot_joint_pmf_and_conditional(jpdfXY, given="y", fig=None):
     # (b) Slice through f_XY at y=b  (top right)
     ax1 = plt.subplot(gs[0,1], frameon=False)
     if given == "y":
-        fXY_at_y = jpdfXY.loc["b",:]
+        fXY_at_y = jpmfXY.loc["b",:]
         plot_pmf_series(fXY_at_y, rv_name="XY", ax=ax1)
         ax1.set_title("(b) Horizontal slice though $f_{XY}$ at $y=b$           ", fontsize=11)
         ax1.set_yticks([0,0.02,0.04,0.06,0.08,0.1,0.12])
     else:
-        fXY_at_x = jpdfXY.loc[:,5]
+        fXY_at_x = jpmfXY.loc[:,5]
         plot_pmf_series(fXY_at_x, rv_name="XY", ax=ax1)
         ax1.set_title("(b) Vertical slice though $f_{XY}$ at $x=5$           ", fontsize=11)
         ax1.set_yticks([0,0.02,0.04,0.06])
@@ -453,13 +450,13 @@ def plot_joint_pmf_and_conditional(jpdfXY, given="y", fig=None):
     # Conditional f_X|Y at y=b (bottom right)
     ax2 = plt.subplot(gs[1,1], frameon=False, sharex=ax1)
     if given == "y":
-        fYgivenX = jpdfXY.loc["b",:] / jpdfXY.loc["b",:].sum()
+        fYgivenX = jpmfXY.loc["b",:] / jpmfXY.loc["b",:].sum()
         plot_pmf_series(fYgivenX, rv_name="X|Y", ax=ax2)
         ax2.set_title("(c) Conditional distribution $f_{X|Y}(x|b)$", fontsize=11, loc="right")
         ax2.set_xlabel("$x$", fontsize=7)
         ax2.set_yticks([0,0.1,0.2,0.3,0.4])
     else:
-        fXgivenY = jpdfXY.loc[:,5] / jpdfXY.loc[:,5].sum()
+        fXgivenY = jpmfXY.loc[:,5] / jpmfXY.loc[:,5].sum()
         plot_pmf_series(fXgivenY, rv_name="Y|X", ax=ax2)
         ax2.set_title("(c) Conditional distribution $f_{Y|X}(y|5)$", fontsize=11, loc="right")
         ax2.set_xlabel("$y$", fontsize=7)
