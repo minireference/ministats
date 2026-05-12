@@ -540,27 +540,50 @@ def get_meshgrid_and_pos(xlims, ylims, ngrid):
     return X, Y, pos
 
 
-def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None):
+def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None, highlight=None):
     """
     Filled contour plot of the bivariate joint distribution `rvXY`.
+    Use the option `highlight=[[(x1,y1),(x2,y2)], ... ]` to highlight
+    rectangular events with corners (x1,y1) and (x2,y2).
     """
     # Setup figure and axes
     if ax is None:
         fig, ax = plt.subplots(figsize=(7,4))
     else:
         fig = ax.figure
+
     # Compute the joint-probability density function values
     X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
     fXY = rvXY.pdf(pos)
-    # Contour plot
-    cax = ax.contourf(fXY,
-                      origin='lower',
-                      extent=(*xlims, *ylims),
-                      levels=10,
-                      cmap="Greys")
+
+    LEVELS = 10
+    CMAP = "Greys"
+
+    # Base contour plot: muted if highlights are requested
+    base_alpha = 0.3 if highlight is not None else 1.0
+    ax.contourf(X, Y, fXY, levels=LEVELS, cmap=CMAP, alpha=base_alpha)
+
+    # Overlay highlighted regions in full colour
+    if highlight is not None:
+        for (x1, y1), (x2, y2) in highlight:
+            xmin, xmax = sorted([x1, x2])
+            ymin, ymax = sorted([y1, y2])
+            mask = (xmin <= X) & (X <= xmax) & (ymin <= Y) & (Y <= ymax)
+            fXY_highlight = np.ma.masked_where(~mask, fXY)
+            ax.contourf(X, Y, fXY_highlight, levels=LEVELS, cmap=CMAP, alpha=1.0)
+            rect = Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
+                             facecolor="C0", edgecolor="k", alpha=0.25,
+                             linewidth=1.5, zorder=10)
+            ax.add_patch(rect)
+
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
+
     return ax
+
+
 
 
 def plot_joint_pdf_contour(rvXY, xlims, ylims, ngrid=200, ax=None, levels=None):
