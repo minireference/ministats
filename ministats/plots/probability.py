@@ -10,7 +10,7 @@ from ..utils import savefigure
 # Discrete random variables
 ################################################################################
 
-def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label=None):
+def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label=None, color=None):
     """
     Plot the PMF of the discrete random variable `rv` over the `xlims`.
     """
@@ -32,7 +32,11 @@ def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label
     # Compute the probability mass function and plot it
     fXs = rv.pmf(xs)
     fXs = np.where(fXs == 0, np.nan, fXs)  # set zero fXs to np.nan
-    ax.stem(xs, fXs, basefmt=" ", label=label)
+    markerline, stemlines, _ = ax.stem(xs, fXs, basefmt=" ", label=label)
+    if color is not None:
+        plt.setp(stemlines, 'color', color)
+        plt.setp(markerline, 'color', color)
+        plt.setp(markerline, 'markerfacecolor', color)
     ax.set_xticks(xs)
     ax.set_xlabel("$" + rv_name.lower() + "$")
     ax.set_ylabel(f"$f_{{{rv_name}}}$")
@@ -50,7 +54,7 @@ def plot_pmf(rv, xlims=None, ylims=None, rv_name="X", ax=None, title=None, label
     return ax
 
 
-def plot_pmf_series(fX, rv_name="X", ax=None, orientation="vertical"):
+def plot_pmf_series(fX, rv_name="X", ax=None, orientation="vertical", color=None):
     """
     Plot the PMF of the discrete RV stored in the pandas series `fX`.
     """
@@ -60,7 +64,11 @@ def plot_pmf_series(fX, rv_name="X", ax=None, orientation="vertical"):
     x_labels = list(fX.index)
     xs = range(len(x_labels))
     fXs = fX.values
-    ax.stem(xs, fXs, basefmt=" ", orientation=orientation)
+    markerline, stemlines, _ = ax.stem(xs, fXs, basefmt=" ", orientation=orientation)
+    if color is not None:
+        plt.setp(stemlines, 'color', color)
+        plt.setp(markerline, 'color', color)
+        plt.setp(markerline, 'markerfacecolor', color)
     ax.set_xticks(range(len(x_labels)))
     ax.set_xticklabels(x_labels)    
     ax.set_xlabel("$" + rv_name.lower() + "$")
@@ -646,7 +654,7 @@ def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=Non
 # Diagnostic plots (used in Section 2.7 Random variable generation)
 ################################################################################
 
-def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, label=None):
+def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, label=None, color=None):
     """
     Plot the empirical pmf of the observations in  `data`.
     """
@@ -671,7 +679,11 @@ def plot_epmf(data, xlims=None, ylims=None, name="xs", ax=None, title=None, labe
     fxs = counts / n
 
     label = f"epmf({name})"
-    ax.stem(xs, fxs, basefmt=" ", label=label)
+    markerline, stemlines, _ = ax.stem(xs, fxs, basefmt=" ", label=label)
+    if color is not None:
+        plt.setp(stemlines, 'color', color)
+        plt.setp(markerline, 'color', color)
+        plt.setp(markerline, 'markerfacecolor', color)
     ax.set_xticks(range(xmin,xmax))
     # ax.set_ylim([-0.01,0.22])
     # ax.set_yticks([0, 0.1, 0.2])
