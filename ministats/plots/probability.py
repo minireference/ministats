@@ -618,7 +618,7 @@ def plot_joint_pdf_contour(rvXY, xlims, ylims, ngrid=200, ax=None, levels=None):
     return ax
 
 
-def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=None):
+def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=None, box_aspect=None):
     """
     Surface plot of a bivariate joint distribution `rvXY`.
     https://stackoverflow.com/questions/38698277/plot-normal-distribution-in-3d
@@ -636,7 +636,10 @@ def plot_joint_pdf_surface(rvXY, xlims, ylims, ngrid=200, fig=None, viewdict=Non
     ax.plot_surface(X, Y, fXY,
                     color="white", edgecolor="black", shade=False,
                     linewidth=0.2, rcount=40, ccount=40)
-    ax.set_box_aspect((xlims[1]-xlims[0], ylims[1]-ylims[0], 3))
+    if box_aspect is not None:
+        ax.set_box_aspect(box_aspect)
+    else:
+        ax.set_box_aspect((xlims[1]-xlims[0], ylims[1]-ylims[0], 3))
     if viewdict is not None:
         ax.view_init(**viewdict)
     ax.set_xlim(*xlims)

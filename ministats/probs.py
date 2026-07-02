@@ -81,3 +81,37 @@ class MixtureModel(rv_continuous):
         rvs = np.choose(submodel_choices, submodel_samples)
         return rvs
 
+
+
+from scipy.stats._multivariate import multi_rv_generic
+
+
+class BivariateUniformOnTriangle(multi_rv_generic):
+    """
+    Bivariate uniform distribution on the unit right triangle
+        D_XY = {(x, y) : x >= 0, y >= 0, x + y <= 1}
+    with joint density
+        f_XY(x, y) = 2,  (x, y) in D_XY
+                   = 0,  otherwise.
+    The `pdf` method accepts an array of (x,y) coordinates
+    similar to the `scipy.stats` multivariate distribution.
+    """
+
+    def __init__(self, seed=None):
+        super().__init__(seed=seed)
+        self.dim = 2
+        self.name = "bivariate_uniform_on_triangle"
+
+    def pdf(self, pos):
+        pos = np.asarray(pos)
+        if pos.shape[-1] != 2:
+            raise ValueError("The last axis of `pos` must have length 2.")
+        x = pos[..., 0]
+        y = pos[..., 1]
+        inside = (x >= 0) & (y >= 0) & (x + y <= 1)
+        return np.where(inside, 2.0, 0.0)
+
+    @property
+    def mean(self):
+        return np.array([1/3, 1/3], dtype=float)
+
