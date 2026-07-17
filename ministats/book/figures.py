@@ -2,14 +2,15 @@ import math
 
 from matplotlib import gridspec
 from matplotlib.collections import PolyCollection
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import quad
 from scipy.stats.contingency import margins
 from scipy.stats import t as tdist
+from scipy.stats import uniform
 import seaborn as sns
 import xarray as xr
-
 
 
 from ..calculus import plot_integral
@@ -17,6 +18,8 @@ from ..plots import nicebins
 from ..plots.figures import calc_prob_and_plot
 from ..plots.figures import calc_prob_and_plot_tails
 from ..plots.probability import get_meshgrid_and_pos
+from ..plots.probability import plot_pdf
+from ..plots.probability import plot_joint_pdf_contourf
 
 
 # Probability theory
@@ -112,22 +115,29 @@ def plot_joint_pdf_and_marginals(rvXY, xlims, ylims, ngrid=200, fig=None):
     if fig is None:
         fig = plt.figure(figsize=(7,4))
 
+    # Custom CMAP that doesn't go all the way to black
+    greys = plt.colormaps["Greys"]
+    mygreys = LinearSegmentedColormap.from_list(
+        "mygreys", 
+        greys(np.linspace(0, 0.8, 256)),
+    )
+
     # Compute the joint-probability density function values
     X, Y, pos = get_meshgrid_and_pos(xlims, ylims, ngrid)
     fXY = rvXY.pdf(pos)
 
     # Figure grid
-    gs = gridspec.GridSpec(2, 2, width_ratios=[6,1], height_ratios=[1,4])
+    gs = gridspec.GridSpec(2, 2, width_ratios=[6,1], height_ratios=[1,6])
 
     # Contour plot of f_XY
     ax = plt.subplot(gs[1,0])    
     cax = ax.contourf(fXY, origin = 'lower',
                       extent=(*xlims, *ylims),
                       levels=12,
-                      cmap="Greys")
+                      cmap=mygreys)
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
-    ax.text(5, 6, "$f_{XY}$", fontsize="x-large")
+    ax.text(xlims[0], ylims[1], "$f_{XY}$", fontsize="x-large", ha="left", va="top")
 
     # Compute marginal distributions
     fYm, fXm = margins(fXY)
@@ -143,7 +153,8 @@ def plot_joint_pdf_and_marginals(rvXY, xlims, ylims, ngrid=200, fig=None):
     axt.fill_between(xs, 0, fX, alpha=.5, color = 'gray')
     axt.tick_params(labelbottom=False)
     axt.tick_params(labelleft=False)
-    axt.text(5, 0.08, "$f_{X}$", fontsize="x-large")
+    max_fX = np.max(fX)
+    axt.text(xlims[0], max_fX, "$f_{X}$", fontsize="x-large", ha="left", va="top")
 
     # The marginal f_Y (right)
     ys = Y[:,0]
@@ -153,7 +164,8 @@ def plot_joint_pdf_and_marginals(rvXY, xlims, ylims, ngrid=200, fig=None):
     axr.fill_betweenx(ys, 0, fY, alpha=0.5, color="gray")
     axr.tick_params(labelbottom=False)
     axr.tick_params(labelleft=False)
-    axr.text(0.3,3.2, "$f_{Y}$", fontsize="x-large")
+    max_fY = np.max(fY)
+    axr.text(max_fY, ylims[1], "$f_{Y}$", fontsize="x-large", ha="right", va="top")
 
     return fig
 
@@ -252,6 +264,73 @@ def plot_conditional_fYgivenX(rvXY, xlims, ylims, xcuts, ngrid=500, fig=None):
     zmax = 0.006
     ax.set(xlim=xlims, ylim=ylims, zlim=(0, zmax), xlabel='$x$', ylabel='$y$', zlabel=None);
     ax.set_xticks(range(4, 17, 1))
+
+    return fig
+
+
+def plot_joint_pdf_and_conditionals(jpdfXY, givenx=None, giveny=None, fig=None):
+    """
+    Plot the joint PDF `f_XY` and the conditionals `f_{X|Y}` and `f_{X|Y}`.
+    """
+    # Setup figure and axes
+    if fig is None:
+        fig = plt.figure(figsize=(6,3))
+
+    # Figure grid
+    axs = fig.subplots(ncols=2, nrows=2,
+                       width_ratios=[4,3],
+                       height_ratios=[1,1],
+                       gridspec_kw=dict(hspace=0.8, wspace=0.4))
+    gs = axs[0][0].get_gridspec()
+    # Remove the axes (we'll recreate manually below)
+    axs[0][0].remove()
+    axs[1][0].remove()
+    axs[0][1].remove()
+    axs[1][1].remove()
+    
+    # (a) Plot of f_XY
+    ax = fig.add_subplot(gs[0:, 0])
+    plot_joint_pdf_contourf(
+        jpdfXY,
+        xlims=(-0.1, 1.1),
+        ylims=(-0.1, 1.1),
+        ngrid=401,
+        ax=ax,
+    )
+    ax.set_xlabel("$x$", fontsize=7)
+    ax.set_ylabel("$y$", fontsize=7)
+    ax.set_title("(a) Joint PDF $f_{XY}$", fontsize=12)
+    
+    # A horizontal slice through f_XY at height y=giveny
+    ax.plot([0,1-giveny], [giveny,giveny],
+            color="k", linewidth=2.2, zorder=10)
+    # (b) Conditional f_X|Y at y=giveny (top right)
+    ax1 = plt.subplot(gs[0,1], frameon=False)
+    rvXgiveny = uniform(0, 1-giveny)
+    # TODO: generalize so this works for any `jpdfXY`, not just uniform over triangle
+    plot_pdf(rvXgiveny, rv_name="X|Y", xlims=(-0.1, 1.1), ax=ax1)
+    ax1.set_title(f"(b) Conditional $f_{{X|Y}}$ at $y={giveny}$", fontsize=11)
+    ax1.set_xlabel("$x$", fontsize=7)
+    # Arrow between end of horizontal slice and (b)
+    arrowprops2 = dict(facecolor='C0', shrink=0.005,
+                       width=4, headwidth=10, headlength=12,
+                       connectionstyle="arc3,rad=-0.1")
+    eps = 0.01
+    ax.annotate("", xytext=(1-giveny+eps, giveny), xy=(1.42, 1.17), arrowprops=arrowprops2, annotation_clip=False)
+    
+
+    # A vertical slice through f_XY at x=givenx
+    ax.plot([givenx,givenx], [0,1-givenx],
+            color="k", linewidth=2.2, zorder=10)    
+    # Arrow between end of vertical slice and (c)
+    ax.annotate("", xytext=(givenx+eps, 1-givenx), xy=(1.42, 0.4),  arrowprops=arrowprops2, annotation_clip=False)    
+    # (c) Conditional f_Y|X at x=givenx (bottom right)
+    ax2 = plt.subplot(gs[1,1], frameon=False, sharex=ax1)
+    rvYgivenx = uniform(0, 1-givenx)
+    # TODO: generalize so this works for any `jpdfXY`, not just uniform over triangle
+    plot_pdf(rvYgivenx, rv_name=f"Y|X={givenx}", xlims=(-0.1, 1.1), ax=ax2)
+    ax2.set_title(f"(c) Conditional $f_{{Y|X}}$ at $x={givenx}$", fontsize=11)
+    ax2.set_xlabel("$y$", fontsize=7)
 
     return fig
 

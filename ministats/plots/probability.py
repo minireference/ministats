@@ -1,8 +1,10 @@
 from matplotlib.patches import Rectangle
 from matplotlib import gridspec
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+
 
 from ..utils import savefigure
 
@@ -565,11 +567,17 @@ def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None, highlight=No
     fXY = rvXY.pdf(pos)
 
     LEVELS = 10
-    CMAP = "Greys"
+
+    # Custom CMAP that doesn't go all the way to black
+    greys = plt.colormaps["Greys"]
+    mygreys = LinearSegmentedColormap.from_list(
+        "mygreys", 
+        greys(np.linspace(0, 0.8, 256)),
+    )
 
     # Base contour plot: muted if highlights are requested
     base_alpha = 0.3 if highlight is not None else 1.0
-    ax.contourf(X, Y, fXY, levels=LEVELS, cmap=CMAP, alpha=base_alpha)
+    ax.contourf(X, Y, fXY, levels=LEVELS, cmap=mygreys, alpha=base_alpha)
 
     # Overlay highlighted regions in full colour
     if highlight is not None:
@@ -578,7 +586,7 @@ def plot_joint_pdf_contourf(rvXY, xlims, ylims, ngrid=200, ax=None, highlight=No
             ymin, ymax = sorted([y1, y2])
             mask = (xmin <= X) & (X <= xmax) & (ymin <= Y) & (Y <= ymax)
             fXY_highlight = np.ma.masked_where(~mask, fXY)
-            ax.contourf(X, Y, fXY_highlight, levels=LEVELS, cmap=CMAP, alpha=1.0)
+            ax.contourf(X, Y, fXY_highlight, levels=LEVELS, cmap=mygreys, alpha=1.0)
             rect = Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
                              facecolor="C0", edgecolor="k", alpha=0.25,
                              linewidth=1.5, zorder=10)
