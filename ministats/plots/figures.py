@@ -373,7 +373,7 @@ def plot_samples(samples_df, ax=None, xlims=None, filename=None,
 
 
 def plot_sampling_dist(stats, label=None, xlims=None, ax=None, rv_name=None, skip_xlabel=False,
-                       binwidth=None, scatter="mean", filename=None, figsize=None):
+                       binwidth=None, scatter="mean", filename=None, figsize=None, scatterplot_alpha=0.1):
     """
     Plot a combined histogram and strip plot of the values in `stats`.
     """
@@ -397,9 +397,9 @@ def plot_sampling_dist(stats, label=None, xlims=None, ax=None, rv_name=None, ski
     # 3. add the scatter plot of `stats` below
     y_offset = 1 / (100*binwidth)
     if scatter == "mean":
-        sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="D", s=DIAMOND_SIZE, alpha=0.1)
+        sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="D", s=DIAMOND_SIZE, alpha=scatterplot_alpha)
     elif scatter == "std":
-        sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="|", s=30, alpha=0.1)
+        sns.scatterplot(x=stats, y=-y_offset, ax=ax, color=orange, marker="|", s=30, alpha=scatterplot_alpha)
 
     # 4. Handle keyword arguments
     if xlims:

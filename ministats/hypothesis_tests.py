@@ -90,7 +90,7 @@ def chi2test_var(sample, sigma0, alt="greater"):
 # SIMULATION TESTS (Section 3.3)
 ################################################################################
 
-def simulation_test_mean(sample, mu0, sigma0, alt="two-sided"):
+def simulation_test_mean(sample, mu0, sigma0, alt="two-sided", N=10000):
     """
     Compute the p-value of the observed mean of `sample`
     under H0 of a normal distribution `norm(mu0,sigma0)`.
@@ -101,7 +101,7 @@ def simulation_test_mean(sample, mu0, sigma0, alt="two-sided"):
 
     # 2. Get sampling distribution of the mean under H0
     rvXH0 = norm(mu0, sigma0)
-    xbars = gen_sampling_dist(rvXH0, estfunc=mean, n=n)
+    xbars = gen_sampling_dist(rvXH0, estfunc=mean, n=n, N=N)
 
     # 3. Compute the p-value
     tails = tailvalues(xbars, obsmean, alt=alt)
