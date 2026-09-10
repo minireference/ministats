@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import quad
 from scipy.stats.contingency import margins
+from scipy.stats import norm
 from scipy.stats import t as tdist
 from scipy.stats import uniform
 import seaborn as sns
@@ -415,7 +416,86 @@ def tails_of_pdf_panel(rvX, rv_name, xlims, xticks=None, ns=[2,3], fig=None):
 
 
 
+# Section 3.2: Confidence intervals
+################################################################################
+def plot_confidence_interval(xlims=None, ax=None):
+    """
+    Plot the PDF of the normal random variable
+    and highlight the 90% central probability interval.
+    """
+    # Setup axes
+    if ax is None:
+        fig, ax = plt.subplots()
 
+    # Confidence interval calculations
+    rv = norm()
+    alpha = 0.1
+    lower_bound = rv.ppf(alpha/2)
+    upper_bound = rv.ppf(1 - alpha/2)
+
+    # Plot limits
+    if xlims is not None:
+        xmin, xmax = xlims
+    else:
+        xmin, xmax = rv.ppf(0.005), rv.ppf(0.995)
+
+    # Plot the PDF
+    xs = np.linspace(xmin, xmax, 1000)
+    fXs = rv.pdf(xs)
+    ymax = np.max(fXs)
+
+    # Generic parameter name
+    rv_name = r"$\theta$"
+
+    # PDF curve
+    sns.lineplot(x=xs, y=fXs, ax=ax, color="C0")
+
+    # Shade the central interval
+    mask_mid = (xs >= lower_bound) & (xs <= upper_bound)
+    ax.fill_between(xs[mask_mid], 0, fXs[mask_mid], color="C0", alpha=0.25)
+
+    # Cutoff lines
+    ax.vlines([lower_bound, upper_bound], ymin=0, ymax=[rv.pdf(lower_bound), rv.pdf(upper_bound)], color="C0")
+
+    # Top interval arrow
+    y_arrow = 1.08 * ymax
+    ax.annotate("", xy=(upper_bound, y_arrow), xytext=(lower_bound, y_arrow),
+                arrowprops=dict(arrowstyle="<->", color="C0", lw=1.8, shrinkA=0, shrinkB=0))
+    ax.text((lower_bound + upper_bound) / 2, y_arrow + 0.03 * ymax,
+            r"$[\mathbf{L}_{\theta}, \mathbf{U}_{\theta}]$",
+            ha="center", va="bottom")
+
+    # Central probability label
+    ax.text((lower_bound + upper_bound) / 2, 0.22 * ymax,
+            r"$0.9$", fontsize="large", ha="center", va="center")
+
+    # Tail labels
+    left_tail_x = rv.ppf(alpha/4)+0.13
+    ax.text(left_tail_x+0.02, 0, r"$0.05$", ha="center", va="bottom", fontsize=8)
+    ax.text(-left_tail_x-0.033, 0, r"$0.05$", ha="center", va="bottom", fontsize=8)
+    
+    # Axis labels
+    ax.set_ylabel("")
+    ax.set_xlabel("")
+
+    # Only show the two cutoff ticks
+    ax.set_xticks([lower_bound, upper_bound])
+    ax.set_xticklabels([r"$\mathbf{L}_{\theta}$", r"$\mathbf{U}_{\theta}$"], fontsize=12)
+    ax.set_yticks([])
+
+    # Limits
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(0, 1.2 * ymax)
+
+    # Clean up spines
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    # Put rv_name at in the middle of the x-axis
+    ax.text(0, -0.055, rv_name, ha="left", va="top", fontsize=11)
+
+    return ax
 
 
 

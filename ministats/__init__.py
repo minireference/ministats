@@ -111,6 +111,10 @@ from .plots.regression import (
     plot_projreg,
 )
 
+from .plots.statistics import (
+    plot_conf_int,
+)
+
 from .sampling import (
     gen_sampling_dist,
     gen_boot_dist
