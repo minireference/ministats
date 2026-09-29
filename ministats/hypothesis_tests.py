@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.stats import chi2
-from scipy.stats import f_oneway
 from scipy.stats import norm
 from scipy.stats import t as tdist
 
@@ -8,6 +7,7 @@ from .estimators import mean
 from .estimators import std
 from .estimators import var
 from .estimators import dmeans
+from .estimators import Fstat
 from .formulas import calcdf
 
 from .sampling import gen_sampling_dist
@@ -244,7 +244,7 @@ def permutation_anova(samples, P=10000, alt="greater"):
     ns = [len(sample) for sample in samples]
 
     # 1. Compute the observed F-statistic
-    obsfstat, _ = f_oneway(*samples)
+    obsfstat = Fstat(*samples)
 
     # 2. Get sampling dist. of F-statistic under H0
     pfstats = []
@@ -257,7 +257,7 @@ def permutation_anova(samples, P=10000, alt="greater"):
             psample = pvalues[nstart:nstart+nstep]
             psamples.append(psample)
             nstart = nstart + nstep
-        pfstat, _ = f_oneway(*psamples)
+        pfstat = Fstat(*psamples)
         pfstats.append(pfstat)
 
     # 3. Compute the p-value
@@ -333,3 +333,4 @@ def ttest_paired(sample1, sample2, alt="two-sided"):
     rvT = tdist(df=n-1)
     pvalue = tailprobs(rvT, obst, alt=alt)
     return pvalue
+

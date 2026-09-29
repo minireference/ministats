@@ -24,6 +24,16 @@ def dmeans(xsample, ysample):
     return dhat
 
 
+def Fstat(*samples):
+    I = len(samples)
+    n = len(np.concatenate(samples))
+    xbar = np.mean(np.concatenate(samples))
+    SSbetween = sum(len(xi)*(np.mean(xi) - xbar)**2 for xi in samples)
+    SSwithin = sum(np.sum((xi - np.mean(xi))**2) for xi in samples)
+    MSbetween = SSbetween / (I - 1)
+    MSwithin = SSwithin / (n - I)
+    return MSbetween / MSwithin
+
 
 
 # DESCRIPTIVE STATISTICS
