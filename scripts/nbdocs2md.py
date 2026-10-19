@@ -98,7 +98,7 @@ def main():
     docs_dir = os.path.join(scripts_dir, "..", "docs")
     source_dir = os.path.join(docs_dir, "_srcnbs")
     if not os.path.isdir(source_dir):
-        raise SystemExit(f"Notebook directory not found: {source_dir}")
+        raise SystemExit(f"The _srcnbs notebooks directory was not found: {source_dir}")
 
     for path in sorted(glob.glob(os.path.join(source_dir, "*.ipynb"))):
         notebook = nbformat.read(path, as_version=4)
