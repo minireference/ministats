@@ -226,7 +226,28 @@ def ensure_datasets(verbose=False):
     DATASETS_PATH = "datasets"
     DATASETS_DOWNLOAD_ROOT = "datasets"
     PARENT_DATASETS = os.path.join("..", "datasets")
-    REQUIRED_FILES = ["apples.csv", "doctors.csv", "eprices.csv"]    
+    REQUIRED_FILES = [
+        "minimal.csv", "players.csv", "players_full.csv",
+        "apples.csv", "kombucha.csv", "kombuchapop.csv",
+        "students.csv", "eprices.csv", "doctors.csv", "visitors.csv",
+        "bplong.csv", "bpwide.csv",
+        "faithful.csv", "hdisks.csv",
+        "smokefev.csv",
+        "howell30.csv", "interns.csv",
+        "iqs2.csv",
+        "markswide.csv",
+        "radon.csv", 
+        "wloss.csv",
+        # Exercises datasets
+        "lalonde.csv",
+        "gcsemv.csv", "titanic.csv", "marketing.csv",
+        "jobsatisfaction.csv", "iqs.csv", "honors.csv",
+        "ctosses.csv", "binary.csv", "asthma.csv",
+        "movies.csv",
+        "outliers2.csv",
+        # OTHER
+        "oecd_bli.csv",
+    ]
     if have_required_files(DATASETS_DOWNLOAD_ROOT, REQUIRED_FILES):
         print(f"{DATASETS_DOWNLOAD_ROOT}/ directory already exists.")
     elif have_required_files(PARENT_DATASETS, REQUIRED_FILES):
