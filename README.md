@@ -43,21 +43,20 @@ that are easy to read for beginners.
 To install the `ministats` library,
 run this command in a commande line terminal where your Python project lives.
 
-.. code-block:: console
-
-    $ python -m pip install ministats
+```console
+$ python -m pip install ministats
+```
 
 If you need to use `ministats` inside a Jupyter notebook or Colab notebook,
 you can run the following command:
 
-.. code-block:: console
-
-    $ %pip install ministats
+```Jupyter Notebook
+%pip install ministats
+```
 
 This is the preferred method to install the `ministats` library,
 as it will always install the most recent stable release.
 
- 
 
 <!-- BEGIN-QUICKSTART -->
 ## Quickstart
