@@ -1,6 +1,12 @@
 # History
 
-## 0.2.0 (20243-03-28)
+
+### 0.5.20 (2026-10)
+
+- Latest version including lots of updates based on Reading Group feedback.
+
+
+## 0.2.0 (2023-03-28)
 
 - Imported plotting functions from `plot_helpers.py` (in main namespace for now)
 

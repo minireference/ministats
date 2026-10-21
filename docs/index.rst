@@ -1,16 +1,16 @@
-Welcome to the ministats docs
-=============================
+Docs for the ``ministats`` library
+==================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    readme
-   installation
    usage
    design
    history
    contributing
+   sample
 
 
 Indices and tables
