@@ -6,6 +6,7 @@ Docs for the ``ministats`` library
    :caption: Contents:
 
    readme
+   plotting
    api
    usage
    design
