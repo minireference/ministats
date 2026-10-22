@@ -3,59 +3,41 @@
 [![image](https://img.shields.io/pypi/v/ministats.svg)](https://pypi.python.org/pypi/ministats)
 [![Documentation Status](https://readthedocs.org/projects/ministats/badge/?version=latest)](https://ministats.readthedocs.io/en/latest/?version=latest)
 
+`ministats` is lightweight Python for learning statistics
+that includes helper functions for data analysis,
+probability visualizations,
+and statistical analysis procedures.
+The goal is to show code implementations of the standard stats procedures used in STATS 101 courses
+that are easy to understand for Python beginners.
 
-`ministats` is lightweight Python library of helper functions for learning statistics.
-The library contains functions for data analysis, plotting probability distributions,
-and performing various statistical analysis procedures implemented "from scratch."
-The goal is to show code implementations of the standard stats procedures used for STATS 101
-that are easy to read for beginners.
-
-- Free software: MIT license
 - Docs: [ministats.readthedocs.io](https://ministats.readthedocs.io)
 - Features:
-  - Simple, concise, Pythonic code.
-  - Code implementations closely matches the math calculations.
+  - Code implementations *from scratch* that closely match the math calculations.
   - Leverages probability distributions defined in `scipy.stats`.
-  - Includes methods for generating and visualizing sampling distributions.
-  - Covers standard STATS 101 methods: confidence intervals, t-tests, etc.
-    that give the same answer as the stats functions from `scipy.stats` and `statsmodels`
-    but are much easier to read.
-  - Covers the modern statistics curriculum: simulations and resampling methods
-    like bootstrap estimation and permutations tests.
-- Limitations:
-  - Hypothesis testing procedures are slower than stats functions from  `scipy.stats` and `statsmodels`.
-  - Limited scope: includes only basics stats methods needed for a introductory statistics course.
-- Source:
-  - The `ministats` library was developed as support code for the 
-    [**No Bullshit Guide to Statistics**](https://noBSstats.com/),
-    which is an intro-to-statistics textbook that uses a computational approach to teaching.
-    Probability and statistics concepts are explained using words, math formulas,
-    visualizations, and code examples.
-    THe code examples include simulations,
-    resampling methods like bootstrap estimation and permutations tests,
-    code implementations of analytical methods.
-    The power of the scientific Python computing ecosystem make learning statistics easy.
+  - Includes both classical analytical approximation methods like t-tests
+    and modern methods like simulations, bootstrap estimation, and permutation tests.
+- Free software: [MIT license](https://github.com/minireference/ministats/blob/main/LICENSE)
 
 
 
-### Installation
+
+## Installation
 
 To install the `ministats` library,
-run this command in a commande line terminal where your Python project lives.
+run the following command in a terminal:
 
 ```console
 $ python -m pip install ministats
 ```
 
-If you need to use `ministats` inside a Jupyter notebook or Colab notebook,
-you can run the following command:
+To use `ministats` inside a Jupyter notebook or Colab notebook,
+run the following `%`-magic command in a code cell:
 
 ```Python
 %pip install ministats
 ```
 
-This is the preferred method to install the `ministats` library,
-as it will always install the most recent stable release.
+
 
 
 <!-- BEGIN-QUICKSTART -->
@@ -67,16 +49,75 @@ INSERT NOTEBOOK quickstart.ipynb AS MARKDOWN SOURCE
 
 
 
+
+
+## Textbook
+
+The `ministats` library was developed as the support code
+for the [**No Bullshit Guide to Statistics**](https://noBSstats.com/),
+which is an intro-to-stats textbook 
+that uses a computational approach to teaching probability and statistics concepts.
+The book explains concepts using words, math formulas, visualizations, and code examples.
+The `ministats` library contains implementations of all the statistical procedures
+discussed in the book
+written as concise, easy-to-read Python code.
+
+To learn more about the book, consult the links below:
+
+- Table of contents for [Part 1](https://minireference.com/static/excerpts/noBSstats_part1_preview.pdf#page=2)
+  and [Part 2](https://minireference.com/static/excerpts/noBSstats_part2_preview.pdf#page=2)
+- Book preview PDFs:
+  - [`noBSstats_part1_preview.pdf`](https://minireference.com/static/excerpts/noBSstats_part1_preview.pdf)
+  - [`noBSstats_part2_preview.pdf`](https://minireference.com/static/excerpts/noBSstats_part2_preview.pdf)
+- Concept maps from the books: [`statistics_concepts.pdf`](https://minireference.com/static/conceptmaps/statistics_concepts.pdf)
+- Python tutorial: [bit.ly/pytut3](https://bit.ly/pytut3)
+- Book website: [noBSstats.com](https://noBSstats.com/)
+- Announcement [blog post](https://minireference.com/blog/noBSstats-prerelease/)
+- Buy PDF here: [gum.co/noBSstats](https://gum.co/noBSstats)
+- Print version coming soon (January 2027).
+
+
+
+
+## Computational notebooks
+
+To see examples of the `ministats` library in action,
+you can check out the computational notebooks that accompany the book.
+
+- View notebooks online: [noBSstats.com/notebooks/](https://noBSstats.com/notebooks/)
+- Play with the notebooks in the cloud:
+  [https://mybinder.org/v2/gh/minireference/noBSstats/main](https://mybinder.org/v2/gh/minireference/noBSstats/main)
+- Run the notebooks locally by following the
+  [instructions here](https://nobsstats.com/notebooks/12_data_in_practice.html#getting-started-with-jupyterlab).
+- Watch this [playlist](https://www.youtube.com/playlist?list=PLGmu4KtWiH6-WQrTReNIIQhLxU8cirdxA)
+  with video tutorials that accompany the book.
+
+
+
+
 ## Roadmap
 
 Here are some tasks I need to take care of before the v1.0 release,
-which will be the version that accompanies the first editions
-of the [**No Bullshit Guide to Statistics**](https://noBSstats.com/),
+which will be the version that accompanies the first edition
+of the [**No Bullshit Guide to Statistics**](https://noBSstats.com/):
 
-- [ ] finish adding `docs/` 
+- [ ] add text 
+- [ ] finish adding `docs/`
 - [ ] move `plots/figures.py` plotting functions to `plots/book/figures.py`
 - [ ] remove `plots/figures` plotting functions from `ministats` namespace
-- [ ] add more tests:
+- [ ] add more statistical tests:
   - [ ] chi-square tests for categorical data 
   - [ ] one-sample equivalence test
   - [ ] two-sample equivalence test
+- [ ] add more tests
+
+
+
+
+## Testing
+
+The statistical procedures implemented in the `ministats` library
+are tested against the functions from `scipy.stats` and `statsmodels`
+to make sure they give the same answers.
+
+
