@@ -7,6 +7,7 @@ Docs for the ``ministats`` library
 
    readme
    plotting
+   estimators
    api
    usage
    design
