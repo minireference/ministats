@@ -218,6 +218,7 @@ def ensure_datasets(verbose=False):
     Make sure the `datasets/` folder with data files for
     the book is present in the current directory and.
     Otherwise:
+
     1. If ../datasets/ exists and contains the required files,
        copy from ../datasets/ to ./datasets/
     2. Download the files from GitHub repo:
@@ -291,8 +292,7 @@ def ensure_simdata(force=False, verbose=False):
     """
     Download the simulation data used in the notebooks from:
     https://github.com/minireference/noBSstats/tree/main/notebooks/simdata
-    Files are downloaded into the local directory:
-        simdata/
+    Files are downloaded into the local directory: `simdata/`
     and flattened so that only the filenames (no subdirectories) are kept.
     """
     SIMDATA_PATH = "notebooks/simdata"  # directory within the repo

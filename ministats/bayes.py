@@ -106,6 +106,7 @@ def bayes_dmeans(xsample, ysample, priors=None,
     Returns a tuple containing the Bambi model and the InferenceData object.
 
     Usage example:
+
     >>> treated = iqs2[iqs2["group"]=="treat"]["iq"].values
     >>> controls = iqs2[iqs2["group"]=="ctrl"]["iq"].values
     >>> mod, idata = bayes_dmeans(treated, controls, var_name="iq",
@@ -327,10 +328,12 @@ def best_dmeans_model(xsample, ysample, nuprior="exp"):
     """
     Fit the model described in the "Bayesian Estimation Supersedes the t-Test"
     paper by John K. Kruschke.
-    The function supports three different choices for the priors on `nu`:
-      - `shiftedexp` = Expon(lam=1/29) + 1: the prior from the original paper
-      - `exp` = Expon(lam=1/30): a simplified version without the +1 shift
-      - `gamma` = Gamma(alpha=2.0, beta=0.1): the Bambi default prior for `nu`s
+    The function supports three different choices for the priors on ``nu``:
+
+      - ``shiftedexp`` = Expon(lam=1/29) + 1: the prior from the original paper
+      - ``exp`` = Expon(lam=1/30): a simplified version without the +1 shift
+      - ``gamma`` = Gamma(alpha=2.0, beta=0.1): the Bambi default prior for ``nu``
+
     Returns the Bambi model, which you can then analyze and fit.
     """
     pass

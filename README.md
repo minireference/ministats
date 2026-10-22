@@ -50,7 +50,7 @@ $ python -m pip install ministats
 If you need to use `ministats` inside a Jupyter notebook or Colab notebook,
 you can run the following command:
 
-```Jupyter Notebook
+```Python
 %pip install ministats
 ```
 

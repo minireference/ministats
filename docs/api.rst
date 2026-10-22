@@ -8,11 +8,37 @@ Calculus
    :members:
 
 
+Formulas
+--------
+
+.. automodule:: ministats.formulas
+   :members:
+
+
+
+
+Utility functions
+-----------------
+
+.. automodule:: ministats.utils
+   :members:
+
+
+Probability theory
+------------------
+
+.. automodule:: ministats.probs
+   :members:
+
+
+
+
 Estimators
 ----------
 
 .. automodule:: ministats.estimators
    :members:
+
 
 Sampling distributions
 ----------------------
@@ -27,6 +53,15 @@ Confidence intervals
 .. automodule:: ministats.confidence_intervals
    :members:
 
+
+Simulations
+-----------
+
+.. automodule:: ministats.simulations
+   :members:
+
+
+
 Hypothesis tests
 ----------------
 
@@ -34,8 +69,24 @@ Hypothesis tests
    :members:
 
 
-Formulas
---------
+Linear models
+-------------
 
-.. automodule:: ministats.formulas
+.. automodule:: ministats.linear_models
    :members:
+
+
+Bayesian statistics
+-------------------
+
+.. automodule:: ministats.bayes
+   :members:
+
+
+Plotting functions
+------------------
+
+.. automodule:: ministats.plots
+   :members:
+
+

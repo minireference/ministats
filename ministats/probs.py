@@ -87,12 +87,19 @@ from scipy.stats._multivariate import multi_rv_generic
 
 
 class BivariateUniformOnTriangle(multi_rv_generic):
-    """
-    Bivariate uniform distribution on the unit right triangle
-        D_XY = {(x, y) : x >= 0, y >= 0, x + y <= 1}
-    with joint density
-        f_XY(x, y) = 2,  (x, y) in D_XY
-                   = 0,  otherwise.
+    r"""
+    Bivariate uniform distribution on the unit right triangle:
+
+    .. math:: D_{XY} = \{ (x, y) : x \geq 0, y \geq 0, x + y \leq 1 \}
+    
+    with joint density:
+    
+    .. math:: f_{XY}(x,y) =
+              \begin{cases}
+                    2,  & \text{if} (x, y) \in D_{XY}    \\
+                    0,  & \text{otherwise}.
+              \end{cases}
+
     The `pdf` method accepts an array of (x,y) coordinates
     similar to the `scipy.stats` multivariate distribution.
     """

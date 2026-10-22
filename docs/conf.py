@@ -51,7 +51,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = 'Ministats'
+project = 'ministats'
 copyright = "2026"
 author = "Ivan Savov"
 

@@ -32,13 +32,14 @@ def simulate_ci_props(pops, methods=["a", "percentile", "bca"], ns=[20,40],
     Runs a simulation of confidence intervals for `param` using `methods`
     for sample sizes `ns` from populations `pops` (dict label: model).
     Simulation parameters:
-        - pops          # populations
-        - methods       = ["a", "percentile", "bca"]
-        - ns = [20,40]  # sample sizes
-        - param         # population parameter
-        - alpha = 0.1   # target error level
-        - N = 1000      # number of simulations
-        - B = 5000      # number of bootstrap samples
+
+    - pops          # populations
+    - methods       = ["a", "percentile", "bca"]
+    - ns = [20,40]  # sample sizes
+    - param         # population parameter
+    - alpha = 0.1   # target error level
+    - N = 1000      # number of simulations
+    - B = 5000      # number of bootstrap samples
     """
     assert param in ["mean", "var"]
 
