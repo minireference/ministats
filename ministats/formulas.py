@@ -18,17 +18,18 @@ def cohend(sample, mu0):
     return d
 
 
-def cohend2(sample1, sample2):
+def cohend2(xsample, ysample):
     """
     Compute Cohen's d measure of effect size for two independent samples.
     """
-    n1, n2 = len(sample1), len(sample2)
-    mean1, mean2 = mean(sample1), mean(sample2)
-    var1, var2 = var(sample1), var(sample2)
-    # calculate the pooled variance and standard deviation
-    varp = ((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2)
+    obsdhat = np.mean(xsample) - np.mean(ysample)
+    n, m = len(xsample), len(ysample)
+    varX = np.var(xsample, ddof=1)
+    varY = np.var(ysample, ddof=1)
+    # Calculate the pooled variance and standard deviation
+    varp = ((n-1)*varX + (m-1)*varY) / (n + m - 2)
     stdp = np.sqrt(varp)
-    d = (mean1 - mean2) / stdp
+    d = obsdhat / stdp
     return d
 
 

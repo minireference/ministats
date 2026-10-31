@@ -198,15 +198,15 @@ def permutation_test_dmeans(xsample, ysample, P=10000):
     obsdhat = dmeans(xsample, ysample)
 
     # 2. Get sampling dist. of `dmeans` under H0
-    pdhats = []
+    pdhats0 = []
     for i in range(0, P):
         rsx, rsy = resample_under_H0(xsample, ysample)
-        pdhat = dmeans(rsx, rsy)
-        pdhats.append(pdhat)
+        pdhat0 = dmeans(rsx, rsy)
+        pdhats0.append(pdhat0)
 
     # 3. Compute the p-value
-    tails = tailvalues(pdhats, obsdhat)
-    pvalue = len(tails) / len(pdhats)
+    tails = tailvalues(pdhats0, obsdhat)
+    pvalue = len(tails) / len(pdhats0)
     return pvalue
 
 
@@ -300,15 +300,15 @@ def ttest_dmeans(xsample, ysample, equal_var=False, alt="two-sided"):
     # Calculate the standard error, the degrees of
     # freedom, the null model, and the t-statistic
     if not equal_var:  # Welch's t-test (default)
-        seD = np.sqrt(sx**2/n + sy**2/m)
-        obst = (obsdhat - 0) / seD
+        sehatD = np.sqrt(sx**2/n + sy**2/m)
+        obst = (obsdhat - 0) / sehatD
         dfD = calcdf(sx, n, sy, m)
         rvT0 = tdist(df=dfD)
     else:              # Use pooled variance
         varp = ((n-1)*sx**2 + (m-1)*sy**2) / (n+m-2)
         stdp = np.sqrt(varp)
-        seDp = stdp * np.sqrt(1/n + 1/m)
-        obst = (obsdhat - 0) / seDp
+        sehatDp = stdp * np.sqrt(1/n + 1/m)
+        obst = (obsdhat - 0) / sehatDp
         dfp = n + m - 2
         rvT0 = tdist(df=dfp)
 

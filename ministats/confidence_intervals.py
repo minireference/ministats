@@ -64,11 +64,11 @@ def ci_dmeans(xsample, ysample, alpha=0.1, method="a"):
         stdX, n = np.std(xsample, ddof=1), len(xsample)
         stdY, m = np.std(ysample, ddof=1), len(ysample)
         dhat = np.mean(xsample) - np.mean(ysample)
-        seD = np.sqrt(stdX**2/n + stdY**2/m)
+        sehatD = np.sqrt(stdX**2/n + stdY**2/m)
         dfD = calcdf(stdX, n, stdY, m)
         t_l = tdist(df=dfD).ppf(alpha/2)
         t_u = tdist(df=dfD).ppf(1-alpha/2)
-        return [dhat + t_l*seD, dhat + t_u*seD]
+        return [dhat + t_l*sehatD, dhat + t_u*sehatD]
     elif method == "b":      # bootstrap estimation
         xbars_boot = gen_boot_dist(xsample, np.mean)
         ybars_boot = gen_boot_dist(ysample, np.mean)
