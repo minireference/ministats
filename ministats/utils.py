@@ -246,6 +246,7 @@ def ensure_datasets(verbose=False):
         "ctosses.csv", "binary.csv", "asthma.csv",
         "movies.csv",
         "outliers2.csv",
+        "fourgroups.csv",
         # OTHER
         "oecd_bli.csv",
     ]
