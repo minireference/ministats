@@ -640,12 +640,15 @@ def plot_residuals2(xdata, ydata, b0, b1, xlims=None, ax=None):
 # Hypothesis tests as linear models
 ################################################################################
 
-def plot_lm_ttest(data, x, y, ax=None, usetex=False):
+def plot_lm_ttest(data, x, y, ax=None, usetex=False, figsize=(5,3)):
     """
     Plot a combined scatterplot, means, and LM slope line
     to illustrate the equivalence between two-sample t-test
     and a linear model with a single binary predictor `x`.
     """
+    if ax is None:
+        _, ax = plt.subplots(figsize=figsize)
+
     # Fit the linear model
     lm = smf.ols(formula=f"{y} ~ 1 + C({x})", data=data).fit()
     beta0, beta1 = lm.params
@@ -653,7 +656,6 @@ def plot_lm_ttest(data, x, y, ax=None, usetex=False):
 
     # Plot the data
     with plt.rc_context({"text.usetex":usetex}):
-        ax = plt.gca() if ax is None else ax
         sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2)
         sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D")
 
@@ -703,12 +705,15 @@ def plot_lm_ttest(data, x, y, ax=None, usetex=False):
         return ax
 
 
-def plot_lm_anova(data, x, y, ax=None, usetex=False):
+def plot_lm_anova(data, x, y, ax=None, usetex=False, figsize=(5,3)):
     """
     Plot a combined scatterplot, means, and LM slope lines
     to illustrate the equivalence between ANOVA test and
     a linear model with a single categorical predictor `x`.
     """
+    if ax is None:
+        _, ax = plt.subplots(figsize=figsize)
+
     # Fit the linear model
     lm = smf.ols(formula=f"{y} ~ 1 + C({x})", data=data).fit()
 
@@ -723,7 +728,6 @@ def plot_lm_anova(data, x, y, ax=None, usetex=False):
 
     # Plot the data
     with plt.rc_context({"text.usetex":usetex}):
-        ax = plt.gca() if ax is None else ax
         sns.stripplot(data=data, x=x, y=y, hue=x, size=3, jitter=0, alpha=0.2, order=labels, hue_order=labels)
         sns.pointplot(data=data, x=x, y=y, hue=x, estimator="mean", errorbar=None, marker="D", hue_order=labels)
 
