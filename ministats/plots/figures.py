@@ -16,6 +16,7 @@ from scipy.stats import norm
 from scipy.stats import uniform    # show alpha and beta; not loc and scale
 import seaborn as sns
 import statsmodels.formula.api as smf
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 
 
 # Useful colors
@@ -649,6 +650,10 @@ def plot_lm_ttest(data, x, y, ax=None, usetex=False, figsize=(5,3)):
     if ax is None:
         _, ax = plt.subplots(figsize=figsize)
 
+    # Check if user passed LM result object instead of data
+    if isinstance(data, RegressionResultsWrapper):
+        data = data.model.data.frame
+
     # Fit the linear model
     lm = smf.ols(formula=f"{y} ~ 1 + C({x})", data=data).fit()
     beta0, beta1 = lm.params
@@ -713,6 +718,10 @@ def plot_lm_anova(data, x, y, ax=None, usetex=False, figsize=(5,3)):
     """
     if ax is None:
         _, ax = plt.subplots(figsize=figsize)
+
+    # Check if user passed LM result object instead of data
+    if isinstance(data, RegressionResultsWrapper):
+        data = data.model.data.frame
 
     # Fit the linear model
     lm = smf.ols(formula=f"{y} ~ 1 + C({x})", data=data).fit()
